@@ -1,0 +1,681 @@
+// Global State
+let scheduleData = [];
+let filteredData = [];
+let selectedDay = "Senin";
+let filterType = "day";
+let filterValue = "";
+let colorBy = "time";
+
+// Builder State
+let maxSKS = 24;
+let classType = "Normal";
+let avoidDays = [];
+let avoidLecturers = [];
+let selectedCourses = [];
+let generatedSchedules = [];
+let currentScheduleIndex = 0;
+
+function refreshIcons() {
+  if (window.lucide && typeof window.lucide.createIcons === "function") {
+    lucide.createIcons();
+  }
+}
+
+// Initialize
+document.addEventListener("DOMContentLoaded", () => {
+  loadScheduleData();
+  setupEventListeners();
+  refreshIcons();
+});
+
+// Load CSV Data
+async function loadScheduleData() {
+  try {
+    const response = await fetch("schedule-data.csv");
+    const csv = await response.text();
+    scheduleData = parseCSV(csv);
+    filteredData = [...scheduleData];
+    updateUI();
+    populateLecturerSelect();
+    populateCourseSelector();
+    showToast("Data berhasil dimuat!", "success");
+  } catch (error) {
+    showToast("Gagal memuat data jadwal", "error");
+  }
+}
+
+// Parse CSV
+function parseCSV(csv) {
+  const lines = csv.trim().split("\n");
+  const headers = lines[0].split(",");
+
+  return lines.slice(1).map((line) => {
+    const values = line.split(",");
+    return {
+      hari: values[0],
+      jam: values[1],
+      mataKuliah: values[2],
+      kelas: values[3],
+      sks: parseInt(values[4]),
+      semester: parseInt(values[5]),
+      dosen: values[6],
+      ruangan: values[7],
+    };
+  });
+}
+
+// Event Listeners
+function setupEventListeners() {
+  // Main tabs
+  document.querySelectorAll(".tab-btn").forEach((btn) => {
+    btn.addEventListener("click", (e) => {
+      document
+        .querySelectorAll(".tab-btn")
+        .forEach((b) => b.classList.remove("active"));
+      document
+        .querySelectorAll(".tab-content")
+        .forEach((c) => c.classList.remove("active"));
+      e.target.classList.add("active");
+      document
+        .getElementById(`${e.target.dataset.tab}-tab`)
+        .classList.add("active");
+    });
+  });
+
+  // Filter type buttons
+  document.querySelectorAll(".filter-type-btn").forEach((btn) => {
+    btn.addEventListener("click", (e) => {
+      document
+        .querySelectorAll(".filter-type-btn")
+        .forEach((b) => b.classList.remove("active"));
+      e.target.classList.add("active");
+      filterType = e.target.dataset.type;
+      updateFilterOptions();
+    });
+  });
+
+  // Filter select
+  document.getElementById("filter-select").addEventListener("change", (e) => {
+    filterValue = e.target.value;
+    applyFilter();
+    document.getElementById("clear-filter").style.display = filterValue
+      ? "block"
+      : "none";
+  });
+
+  // Clear filter
+  document.getElementById("clear-filter").addEventListener("click", () => {
+    filterValue = "";
+    document.getElementById("filter-select").value = "";
+    document.getElementById("clear-filter").style.display = "none";
+    applyFilter();
+  });
+
+  // Color toggle
+  document.querySelectorAll(".toggle-btn").forEach((btn) => {
+    btn.addEventListener("click", (e) => {
+      document
+        .querySelectorAll(".toggle-btn")
+        .forEach((b) => b.classList.remove("active"));
+      e.target.classList.add("active");
+      colorBy = e.target.dataset.color;
+      renderScheduleCards();
+    });
+  });
+
+  // Day tabs
+  document.querySelectorAll(".day-tab").forEach((btn) => {
+    btn.addEventListener("click", (e) => {
+      document
+        .querySelectorAll(".day-tab")
+        .forEach((b) => b.classList.remove("active"));
+      e.target.classList.add("active");
+      selectedDay = e.target.dataset.day;
+      renderScheduleCards();
+    });
+  });
+
+  // Builder: Class type
+  document.querySelectorAll(".class-type-btn").forEach((btn) => {
+    btn.addEventListener("click", (e) => {
+      document
+        .querySelectorAll(".class-type-btn")
+        .forEach((b) => b.classList.remove("active"));
+      e.target.classList.add("active");
+      classType = e.target.dataset.type;
+    });
+  });
+
+  // Builder: Max SKS
+  document.getElementById("max-sks").addEventListener("input", (e) => {
+    maxSKS = parseInt(e.target.value);
+  });
+
+  // Builder: Avoid days
+  document.getElementById("add-avoid-day").addEventListener("click", () => {
+    const select = document.getElementById("avoid-day-select");
+    const day = select.value;
+    if (day && !avoidDays.includes(day)) {
+      avoidDays.push(day);
+      updateAvoidDaysList();
+    }
+    select.value = "";
+  });
+
+  // Builder: Avoid lecturers
+  document
+    .getElementById("add-avoid-lecturer")
+    .addEventListener("click", () => {
+      const select = document.getElementById("avoid-lecturer-select");
+      const lecturer = select.value;
+      if (lecturer && !avoidLecturers.includes(lecturer)) {
+        avoidLecturers.push(lecturer);
+        updateAvoidLecturersList();
+      }
+      select.value = "";
+    });
+
+  // Schedule navigation
+  document.getElementById("prev-schedule").addEventListener("click", () => {
+    if (currentScheduleIndex > 0) {
+      currentScheduleIndex--;
+      renderGeneratedSchedule();
+    }
+  });
+
+  document.getElementById("next-schedule").addEventListener("click", () => {
+    if (currentScheduleIndex < generatedSchedules.length - 1) {
+      currentScheduleIndex++;
+      renderGeneratedSchedule();
+    }
+  });
+}
+
+// Update UI
+function updateUI() {
+  updateStatistics();
+  updateFilterOptions();
+  renderScheduleCards();
+}
+
+// Update Statistics
+function updateStatistics() {
+  const uniqueCourses = new Set(scheduleData.map((e) => e.mataKuliah)).size;
+  const uniqueLecturers = new Set(
+    scheduleData.map((e) => e.dosen).filter((d) => d && d !== "-")
+  ).size;
+  const uniqueRooms = new Set(
+    scheduleData.map((e) => e.ruangan).filter((r) => r && r !== "-")
+  ).size;
+
+  document.getElementById("total-schedules").textContent = scheduleData.length;
+  document.getElementById("total-courses").textContent = uniqueCourses;
+  document.getElementById("total-lecturers").textContent = uniqueLecturers;
+  document.getElementById("total-rooms").textContent = uniqueRooms;
+}
+
+// Update Filter Options
+function updateFilterOptions() {
+  const select = document.getElementById("filter-select");
+  select.innerHTML = '<option value="">Pilih Filter</option>';
+
+  let options = [];
+  switch (filterType) {
+    case "day":
+      options = ["Senin", "Selasa", "Rabu", "Kamis", "Jumat"];
+      break;
+    case "room":
+      options = [
+        ...new Set(
+          scheduleData.map((e) => e.ruangan).filter((r) => r && r !== "-")
+        ),
+      ].sort();
+      break;
+    case "lecturer":
+      options = [
+        ...new Set(
+          scheduleData.map((e) => e.dosen).filter((d) => d && d !== "-")
+        ),
+      ].sort();
+      break;
+    case "semester":
+      options = [...new Set(scheduleData.map((e) => e.semester))].sort(
+        (a, b) => a - b
+      );
+      break;
+  }
+
+  options.forEach((opt) => {
+    const option = document.createElement("option");
+    option.value = opt;
+    option.textContent = opt;
+    select.appendChild(option);
+  });
+}
+
+// Apply Filter
+function applyFilter() {
+  if (!filterValue) {
+    filteredData = [...scheduleData];
+  } else {
+    filteredData = scheduleData.filter((entry) => {
+      switch (filterType) {
+        case "day":
+          return entry.hari === filterValue;
+        case "room":
+          return entry.ruangan === filterValue;
+        case "lecturer":
+          return entry.dosen === filterValue;
+        case "semester":
+          return entry.semester === parseInt(filterValue);
+        default:
+          return true;
+      }
+    });
+  }
+  renderScheduleCards();
+}
+
+// Render Schedule Cards
+function renderScheduleCards() {
+  const container = document.getElementById("schedule-cards");
+  const dayEntries = filteredData
+    .filter((e) => e.hari === selectedDay)
+    .sort((a, b) => a.jam.localeCompare(b.jam));
+
+  if (dayEntries.length === 0) {
+    container.innerHTML =
+      '<div class="empty-state"><p>Tidak ada jadwal untuk hari ini</p></div>';
+    return;
+  }
+
+  container.innerHTML = dayEntries
+    .map((entry) => createScheduleCard(entry))
+    .join("");
+  refreshIcons();
+}
+
+// Create Schedule Card
+function createScheduleCard(entry) {
+  const colorClass =
+    colorBy === "time"
+      ? getTimeCategory(entry.jam)
+      : `semester-${entry.semester}`;
+
+  return `
+    <div class="schedule-card ${colorClass}">
+        <div class="card-top">
+            <div>
+                <div class="card-title">${entry.mataKuliah}</div>
+                <div class="card-subtitle">${entry.hari} &bull; Semester ${entry.semester} &bull; ${entry.sks} SKS</div>
+            </div>
+            <span class="chip chip-primary">${entry.kelas}</span>
+        </div>
+        <div class="card-info">
+            <div class="info-row">
+                <i data-lucide="clock-3" class="info-icon"></i>
+                <span>${entry.jam}</span>
+            </div>
+            <div class="info-row">
+                <i data-lucide="map-pin" class="info-icon"></i>
+                <span>${entry.ruangan}</span>
+            </div>
+            <div class="info-row">
+                <i data-lucide="user-round" class="info-icon"></i>
+                <span>${entry.dosen}</span>
+            </div>
+            <div class="info-row">
+                <i data-lucide="layers" class="info-icon"></i>
+                <span>Semester ${entry.semester} &bull; ${entry.sks} SKS</span>
+            </div>
+        </div>
+    </div>
+`;
+}
+
+
+// Get Time Category
+function getTimeCategory(jam) {
+  const hour = parseInt(jam.split(".")[0]);
+  if (hour < 12) return "morning";
+  if (hour < 16) return "afternoon";
+  return "evening";
+}
+
+// Builder Functions
+function populateLecturerSelect() {
+  const select = document.getElementById("avoid-lecturer-select");
+  const lecturers = [
+    ...new Set(scheduleData.map((e) => e.dosen).filter((d) => d && d !== "-")),
+  ].sort();
+
+  lecturers.forEach((lecturer) => {
+    const option = document.createElement("option");
+    option.value = lecturer;
+    option.textContent = lecturer;
+    select.appendChild(option);
+  });
+}
+
+function populateCourseSelector() {
+  const container = document.getElementById("course-selector");
+  const courses = [...new Set(scheduleData.map((e) => e.mataKuliah))].sort();
+
+  container.innerHTML = courses
+    .map(
+      (course) => `
+        <div class="course-item" data-course="${course}">
+            <input type="checkbox" id="course-${course.replace(
+              /\s/g,
+              "-"
+            )}" value="${course}">
+            <label for="course-${course.replace(/\s/g, "-")}">${course}</label>
+        </div>
+    `
+    )
+    .join("");
+
+  // Add click handlers
+  document.querySelectorAll(".course-item").forEach((item) => {
+    item.addEventListener("click", (e) => {
+      if (e.target.tagName !== "INPUT") {
+        const checkbox = item.querySelector("input");
+        checkbox.checked = !checkbox.checked;
+      }
+
+      const checkbox = item.querySelector("input");
+      const course = checkbox.value;
+
+      if (checkbox.checked) {
+        item.classList.add("selected");
+        if (!selectedCourses.includes(course)) {
+          selectedCourses.push(course);
+        }
+      } else {
+        item.classList.remove("selected");
+        selectedCourses = selectedCourses.filter((c) => c !== course);
+      }
+
+      updateSelectedCount();
+    });
+  });
+}
+
+function updateSelectedCount() {
+  document.getElementById(
+    "selected-count"
+  ).textContent = `${selectedCourses.length} dipilih`;
+}
+
+function updateAvoidDaysList() {
+  const container = document.getElementById("avoid-days-list");
+  container.innerHTML = avoidDays
+    .map(
+      (day) => `
+        <div class="badge">
+            ${day}
+            <button onclick="removeAvoidDay('${day}')">
+                <i data-lucide="x"></i>
+            </button>
+        </div>
+    `
+    )
+    .join("");
+  refreshIcons();
+}
+
+function removeAvoidDay(day) {
+  avoidDays = avoidDays.filter((d) => d !== day);
+  updateAvoidDaysList();
+}
+
+function updateAvoidLecturersList() {
+  const container = document.getElementById("avoid-lecturers-list");
+  container.innerHTML = avoidLecturers
+    .map(
+      (lecturer) => `
+        <div class="badge">
+            ${lecturer}
+            <button onclick="removeAvoidLecturer('${lecturer}')">
+                <i data-lucide="x"></i>
+            </button>
+        </div>
+    `
+    )
+    .join("");
+  refreshIcons();
+}
+
+function removeAvoidLecturer(lecturer) {
+  avoidLecturers = avoidLecturers.filter((l) => l !== lecturer);
+  updateAvoidLecturersList();
+}
+
+function goToStep(step) {
+  document
+    .querySelectorAll(".builder-step")
+    .forEach((s) => s.classList.remove("active"));
+  document.getElementById(`step-${step}`).classList.add("active");
+}
+
+// Generate Schedules
+function generateSchedules() {
+  if (selectedCourses.length === 0) {
+    showToast("Pilih minimal satu mata kuliah!", "error");
+    return;
+  }
+
+  const preferences = {
+    maxSKS,
+    avoidDays,
+    avoidLecturers,
+    classType,
+    selectedCourses,
+  };
+
+  generatedSchedules = generateScheduleCombinations(preferences);
+
+  if (generatedSchedules.length === 0) {
+    showToast("Tidak ada kombinasi jadwal yang valid!", "error");
+    return;
+  }
+
+  currentScheduleIndex = 0;
+  goToStep(3);
+  renderGeneratedSchedule();
+  showToast(
+    `Berhasil membuat ${generatedSchedules.length} kombinasi jadwal!`,
+    "success"
+  );
+}
+
+// Schedule Generation Algorithm
+function generateScheduleCombinations(preferences) {
+  // Filter schedules based on preferences
+  const filtered = scheduleData.filter((entry) => {
+    if (!preferences.selectedCourses.includes(entry.mataKuliah)) return false;
+
+    const isIUP = entry.kelas.includes("IUP");
+    if (preferences.classType === "IUP" && !isIUP) return false;
+    if (preferences.classType === "Normal" && isIUP) return false;
+
+    return true;
+  });
+
+  // Group by course
+  const courseGroups = {};
+  filtered.forEach((entry) => {
+    if (!courseGroups[entry.mataKuliah]) {
+      courseGroups[entry.mataKuliah] = [];
+    }
+    courseGroups[entry.mataKuliah].push(entry);
+  });
+
+  // Generate combinations
+  const combinations = [];
+
+  function generateCombos(courses, current, index) {
+    if (index === courses.length) {
+      // Check total SKS
+      const totalSKS = current.reduce((sum, e) => sum + e.sks, 0);
+      if (totalSKS <= preferences.maxSKS) {
+        // Check for time conflicts
+        if (!hasTimeConflicts(current)) {
+          combinations.push([...current]);
+        }
+      }
+      return;
+    }
+
+    const course = courses[index];
+    const options = courseGroups[course];
+
+    for (const option of options) {
+      current.push(option);
+      generateCombos(courses, current, index + 1);
+      current.pop();
+    }
+  }
+
+  generateCombos(preferences.selectedCourses, [], 0);
+
+  // Score and sort combinations
+  const scored = combinations.map((combo) => {
+    let score = 1000;
+    let hasAvoidedDay = false;
+
+    combo.forEach((entry) => {
+      if (preferences.avoidDays.includes(entry.hari)) {
+        hasAvoidedDay = true;
+        score -= 1000;
+      }
+      if (preferences.avoidLecturers.includes(entry.dosen)) {
+        score -= 100;
+      }
+
+      const hour = parseInt(entry.jam.split(".")[0]);
+      if (hour >= 8 && hour <= 16) {
+        score += 1;
+      }
+    });
+
+    return { combo, score, hasAvoidedDay };
+  });
+
+  // Sort: prioritize schedules without avoided days
+  scored.sort((a, b) => {
+    if (a.hasAvoidedDay !== b.hasAvoidedDay) {
+      return a.hasAvoidedDay ? 1 : -1;
+    }
+    return b.score - a.score;
+  });
+
+  return scored.slice(0, 10).map((item) => item.combo);
+}
+
+// Check Time Conflicts
+function hasTimeConflicts(entries) {
+  for (let i = 0; i < entries.length; i++) {
+    for (let j = i + 1; j < entries.length; j++) {
+      if (entries[i].hari === entries[j].hari) {
+        const [start1, end1] = entries[i].jam.split("-");
+        const [start2, end2] = entries[j].jam.split("-");
+
+        if (timeOverlaps(start1, end1, start2, end2)) {
+          return true;
+        }
+      }
+    }
+  }
+  return false;
+}
+
+// Time Overlaps Check
+function timeOverlaps(start1, end1, start2, end2) {
+  const s1 = timeToMinutes(start1);
+  const e1 = timeToMinutes(end1);
+  const s2 = timeToMinutes(start2);
+  const e2 = timeToMinutes(end2);
+
+  return s1 < e2 && e1 > s2;
+}
+
+// Convert Time to Minutes
+function timeToMinutes(time) {
+  const [hours, minutes] = time.split(".").map(Number);
+  return hours * 60 + minutes;
+}
+
+// Render Generated Schedule
+function renderGeneratedSchedule() {
+  if (generatedSchedules.length === 0) return;
+
+  const schedule = generatedSchedules[currentScheduleIndex];
+  const totalSKS = schedule.reduce((sum, e) => sum + e.sks, 0);
+
+  document.getElementById(
+    "results-count"
+  ).textContent = `${generatedSchedules.length} kombinasi`;
+  document.getElementById("results-sks").textContent = `${totalSKS} SKS`;
+  document.getElementById("schedule-counter").textContent = `${
+    currentScheduleIndex + 1
+  } / ${generatedSchedules.length}`;
+
+  // Enable/disable navigation buttons
+  document.getElementById("prev-schedule").disabled =
+    currentScheduleIndex === 0;
+  document.getElementById("next-schedule").disabled =
+    currentScheduleIndex === generatedSchedules.length - 1;
+
+  // Group by day and render
+  const grouped = groupScheduleByDay(schedule);
+  const container = document.getElementById("generated-schedule");
+
+  container.innerHTML = Object.entries(grouped)
+    .sort((a, b) => {
+      const dayOrder = ["Senin", "Selasa", "Rabu", "Kamis", "Jumat"];
+      return dayOrder.indexOf(a[0]) - dayOrder.indexOf(b[0]);
+    })
+    .map(
+      ([day, entries]) => `
+            <div style="grid-column: 1 / -1;">
+                <h3 style="margin: 1rem 0; color: hsl(var(--primary));">${day}</h3>
+            </div>
+            ${entries.map((entry) => createScheduleCard(entry)).join("")}
+        `
+    )
+    .join("");
+  refreshIcons();
+}
+
+// Group Schedule by Day
+function groupScheduleByDay(schedule) {
+  const grouped = {};
+  schedule.forEach((entry) => {
+    if (!grouped[entry.hari]) {
+      grouped[entry.hari] = [];
+    }
+    grouped[entry.hari].push(entry);
+  });
+
+  // Sort by time within each day
+  Object.keys(grouped).forEach((day) => {
+    grouped[day].sort((a, b) => a.jam.localeCompare(b.jam));
+  });
+
+  return grouped;
+}
+
+// Toast Notification
+function showToast(message, type = "success") {
+  const container = document.getElementById("toast-container");
+  const toast = document.createElement("div");
+  toast.className = `toast ${type}`;
+  toast.textContent = message;
+
+  container.appendChild(toast);
+
+  setTimeout(() => {
+    toast.remove();
+  }, 3000);
+}
