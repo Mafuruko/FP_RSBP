@@ -1,6 +1,6 @@
 # 📅 Smart Scheduling System
 
-**Smart Scheduling System** is a lightweight single-page web application that helps university students explore and build their course schedules quickly and flexibly — all **without a backend**!
+**Smart Scheduling System** is a lightweight single-page web application that helps university students explore and build their course schedules quickly and flexibly all **without a backend**!
 
 <p align="center">
   <img width="1899" height="914" alt="image" src="https://github.com/user-attachments/assets/fabf6e78-0aee-4839-9619-422d54e6f3b7" />
@@ -45,7 +45,7 @@ Quick overview of:
 - Semester distribution
 - Time distribution
 
-> 📌 No backend required — deploy anywhere with static hosting!
+> 📌 No backend required, deploy anywhere with static hosting!
 
 ---
 
