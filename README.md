@@ -45,6 +45,8 @@ Quick overview of:
 - Semester distribution
 - Time distribution
 
+> 📌 No backend required — deploy anywhere with static hosting!
+
 ---
 
 ## 🤝 The Team
@@ -56,10 +58,3 @@ Quick overview of:
 | Muhammad Daffa Nurrahman | 5025231208 |
 | Muhammad Naufal Dzakwan | 5025231234 |
 | Muhammad Rafi Budiman | 5025231297 |
-	
-	
- 	
-	
-> 📌 No backend required — deploy anywhere with static hosting!
-
----
