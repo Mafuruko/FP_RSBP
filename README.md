@@ -1,4 +1,4 @@
-# Schedule Planner For FRS
+# Smart Scheduling System
 
 ---
 
