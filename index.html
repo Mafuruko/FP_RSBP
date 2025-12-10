@@ -93,6 +93,16 @@
           <button class="day-tab" data-day="Jumat">Jumat</button>
         </div>
 
+        <div class="search-wrapper">
+          <input
+            id="day-search"
+            class="day-search"
+            type="text"
+            placeholder="Cari mata kuliah untuk hari ini..."
+            autocomplete="off"
+          />
+        </div>
+
         <!-- Schedule Cards Container -->
         <div id="schedule-cards" class="schedule-grid"></div>
       </div>
@@ -171,6 +181,15 @@
             <div class="course-selection-header">
               <label>Pilih Mata Kuliah</label>
               <span id="selected-count">0 dipilih</span>
+            </div>
+            <div class="search-wrapper">
+              <input
+                id="course-search"
+                class="course-search"
+                type="text"
+                placeholder="Cari mata kuliah..."
+                autocomplete="off"
+              />
             </div>
             <div id="course-selector" class="course-grid"></div>
             <div class="step-navigation">

@@ -12,8 +12,10 @@ let classType = "Normal";
 let avoidDays = [];
 let avoidLecturers = [];
 let selectedCourses = [];
+let allCourses = [];
 let generatedSchedules = [];
 let currentScheduleIndex = 0;
+let daySearchTerm = "";
 
 function refreshIcons() {
   if (window.lucide && typeof window.lucide.createIcons === "function") {
@@ -33,11 +35,16 @@ async function loadScheduleData() {
   try {
     const response = await fetch("schedule-data.csv");
     const csv = await response.text();
-    scheduleData = parseCSV(csv);
+    // Filter out kelas RPL dan RKA agar tidak muncul di view maupun builder
+    scheduleData = parseCSV(csv).filter((entry) => {
+      const kelas = (entry.kelas || "").toUpperCase();
+      return !kelas.includes("RPL") && !kelas.includes("RKA");
+    });
+    allCourses = [...new Set(scheduleData.map((e) => e.mataKuliah))].sort();
     filteredData = [...scheduleData];
     updateUI();
     populateLecturerSelect();
-    populateCourseSelector();
+    renderCourseSelector();
     showToast("Data berhasil dimuat!", "success");
   } catch (error) {
     showToast("Gagal memuat data jadwal", "error");
@@ -102,6 +109,15 @@ function setupEventListeners() {
       ? "block"
       : "none";
   });
+
+  // Day search (per hari)
+  const daySearchInput = document.getElementById("day-search");
+  if (daySearchInput) {
+    daySearchInput.addEventListener("input", (e) => {
+      daySearchTerm = e.target.value;
+      renderScheduleCards();
+    });
+  }
 
   // Clear filter
   document.getElementById("clear-filter").addEventListener("click", () => {
@@ -174,6 +190,14 @@ function setupEventListeners() {
       }
       select.value = "";
     });
+
+  // Course search
+  const courseSearchInput = document.getElementById("course-search");
+  if (courseSearchInput) {
+    courseSearchInput.addEventListener("input", (e) => {
+      renderCourseSelector(e.target.value);
+    });
+  }
 
   // Schedule navigation
   document.getElementById("prev-schedule").addEventListener("click", () => {
@@ -279,8 +303,14 @@ function applyFilter() {
 // Render Schedule Cards
 function renderScheduleCards() {
   const container = document.getElementById("schedule-cards");
+  const normalizedSearch = daySearchTerm.trim().toLowerCase();
   const dayEntries = filteredData
     .filter((e) => e.hari === selectedDay)
+    .filter((e) =>
+      normalizedSearch
+        ? e.mataKuliah.toLowerCase().includes(normalizedSearch)
+        : true
+    )
     .sort((a, b) => a.jam.localeCompare(b.jam));
 
   if (dayEntries.length === 0) {
@@ -357,34 +387,49 @@ function populateLecturerSelect() {
   });
 }
 
-function populateCourseSelector() {
+function renderCourseSelector(searchTerm = "") {
   const container = document.getElementById("course-selector");
-  const courses = [...new Set(scheduleData.map((e) => e.mataKuliah))].sort();
+  const normalizedTerm = searchTerm.trim().toLowerCase();
+  const courses = allCourses.filter((course) =>
+    course.toLowerCase().includes(normalizedTerm)
+  );
+
+  if (courses.length === 0) {
+    container.innerHTML = `
+      <div class="course-empty">
+        <i data-lucide="search-x"></i>
+        <p>Mata Kuliah tidak ditemukan</p>
+      </div>
+    `;
+    refreshIcons();
+    return;
+  }
 
   container.innerHTML = courses
-    .map(
-      (course) => `
-        <div class="course-item" data-course="${course}">
-            <input type="checkbox" id="course-${course.replace(
-              /\s/g,
-              "-"
-            )}" value="${course}">
-            <label for="course-${course.replace(/\s/g, "-")}">${course}</label>
+    .map((course) => {
+      const checked = selectedCourses.includes(course) ? "checked" : "";
+      const id = `course-${course.replace(/\s/g, "-")}`;
+      return `
+        <div class="course-item ${checked ? "selected" : ""}" data-course="${course}">
+            <input type="checkbox" id="${id}" value="${course}" ${checked}>
+            <label for="${id}">${course}</label>
         </div>
-    `
-    )
+    `;
+    })
     .join("");
 
   // Add click handlers
   document.querySelectorAll(".course-item").forEach((item) => {
     item.addEventListener("click", (e) => {
-      if (e.target.tagName !== "INPUT") {
-        const checkbox = item.querySelector("input");
-        checkbox.checked = !checkbox.checked;
-      }
-
       const checkbox = item.querySelector("input");
       const course = checkbox.value;
+
+      if (e.target.tagName === "LABEL") {
+        e.preventDefault(); // cegah toggle ganda dari label
+        checkbox.checked = !checkbox.checked;
+      } else if (e.target.tagName !== "INPUT") {
+        checkbox.checked = !checkbox.checked;
+      }
 
       if (checkbox.checked) {
         item.classList.add("selected");
@@ -399,6 +444,7 @@ function populateCourseSelector() {
       updateSelectedCount();
     });
   });
+  refreshIcons();
 }
 
 function updateSelectedCount() {
@@ -541,36 +587,51 @@ function generateScheduleCombinations(preferences) {
 
   // Score and sort combinations
   const scored = combinations.map((combo) => {
-    let score = 1000;
-    let hasAvoidedDay = false;
+    let avoidedDayCount = 0;
+    let avoidedLecturerCount = 0;
+    let timeScore = 0;
 
     combo.forEach((entry) => {
       if (preferences.avoidDays.includes(entry.hari)) {
-        hasAvoidedDay = true;
-        score -= 1000;
+        avoidedDayCount++;
       }
       if (preferences.avoidLecturers.includes(entry.dosen)) {
-        score -= 100;
+        avoidedLecturerCount++;
       }
 
-      const hour = parseInt(entry.jam.split(".")[0]);
+      const hour = parseInt(entry.jam.split(".")[0], 10);
       if (hour >= 8 && hour <= 16) {
-        score += 1;
+        timeScore += 1;
       }
     });
 
-    return { combo, score, hasAvoidedDay };
+    return { combo, avoidedDayCount, avoidedLecturerCount, timeScore };
   });
 
-  // Sort: prioritize schedules without avoided days
+  // Sort dengan prioritas STRICT:
+  // 1. PALING PRIORITAS: 0 hari dihindari DAN 0 dosen dihindari
+  // 2. Prioritas kedua: 0 hari dihindari tapi ada dosen dihindari
+  // 3. Prioritas ketiga: Ada hari dihindari tapi 0 dosen dihindari
+  // 4. Paling akhir: Ada hari DAN dosen dihindari
   scored.sort((a, b) => {
-    if (a.hasAvoidedDay !== b.hasAvoidedDay) {
-      return a.hasAvoidedDay ? 1 : -1;
+    // Hitung total penalty (makin kecil makin bagus)
+    const penaltyA =
+      a.avoidedDayCount * 1000 + a.avoidedLecturerCount * 100;
+    const penaltyB =
+      b.avoidedDayCount * 1000 + b.avoidedLecturerCount * 100;
+
+    if (penaltyA !== penaltyB) {
+      return penaltyA - penaltyB;
     }
-    return b.score - a.score;
+
+    // Jika penalty sama, urutkan berdasarkan time score
+    return b.timeScore - a.timeScore;
   });
 
-  return scored.slice(0, 10).map((item) => item.combo);
+  // Ambil maksimal 20 kombinasi untuk variasi yang lebih banyak
+  // Kombinasi awal = benar-benar clean (0 avoid)
+  // Kombinasi akhir = tetap ada yang mengandung avoid sebagai backup
+  return scored.slice(0, 20).map((item) => item.combo);
 }
 
 // Check Time Conflicts

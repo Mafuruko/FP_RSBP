@@ -245,6 +245,22 @@ body {
   color: hsl(var(--primary));
 }
 
+.day-search {
+  width: 100%;
+  padding: 0.8rem 0.9rem;
+  border: 1px solid hsl(var(--border));
+  border-radius: 10px;
+  font-weight: 600;
+  color: hsl(var(--foreground));
+  background: hsl(var(--card));
+  margin: 0 0 1rem;
+  box-shadow: var(--shadow);
+}
+
+.day-search:focus {
+  outline: 1.5px solid hsl(var(--primary));
+}
+
 /* Stats */
 .stats-grid {
   display: grid;
@@ -583,6 +599,76 @@ body {
 #selected-count {
   color: hsl(var(--muted));
   font-weight: 600;
+}
+
+.course-search {
+  width: 100%;
+  padding: 0.8rem 0.9rem;
+  border: 1px solid hsl(var(--border));
+  border-radius: 10px;
+  font-weight: 600;
+  color: hsl(var(--foreground));
+  background: hsl(var(--card));
+  margin-bottom: 0.8rem;
+}
+
+.course-search:focus {
+  outline: 1.5px solid hsl(var(--primary));
+}
+
+.search-wrapper {
+  position: relative;
+}
+
+.search-clear {
+  position: absolute;
+  right: 0.65rem;
+  top: 0;
+  bottom: 0;
+  margin: auto;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  color: hsl(var(--muted));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  line-height: 0;
+}
+
+.search-clear i,
+.search-clear svg {
+  width: 16px;
+  height: 16px;
+  display: block;
+  vertical-align: middle;
+}
+
+.search-clear:hover {
+  color: hsl(var(--primary));
+}
+
+.course-empty {
+  grid-column: 1 / -1;
+  padding: 2rem;
+  border: 1px dashed hsl(var(--border));
+  border-radius: 12px;
+  text-align: center;
+  color: hsl(var(--muted));
+  background: hsl(var(--card));
+  display: grid;
+  gap: 0.6rem;
+  place-items: center;
+  box-shadow: var(--shadow);
+}
+
+.course-empty i {
+  width: 28px;
+  height: 28px;
+  color: hsl(var(--muted));
 }
 
 .course-grid {
