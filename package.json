@@ -1,0 +1,14 @@
+{
+  "name": "smart-scheduling-system",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Smart Scheduling System - static single-page app",
+  "scripts": {
+    "start": "npx serve .",
+    "deploy": "gh-pages -d ."
+  },
+  "devDependencies": {
+    "gh-pages": "^6.1.1",
+    "serve": "^14.2.1"
+  }
+}
