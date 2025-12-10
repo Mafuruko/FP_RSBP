@@ -178,6 +178,45 @@
           <!-- Step 2: Course Selection -->
           <div class="builder-step" id="step-2">
             <h2>Step 2: Pilih Mata Kuliah</h2>
+
+            <div class="transcript-section" style="margin-bottom: 1.5rem; padding: 1rem; border: 1px dashed var(--border); border-radius: var(--radius);">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+                <label style="font-weight: 500; display: flex; align-items: center; gap: 0.5rem;">
+                  <i data-lucide="file-text" style="width: 16px;"></i> Import Transkrip (Filter Lulus)
+                </label>
+                <button class="chip-btn small secondary" id="toggle-transcript">Buka/Tutup</button>
+              </div>
+              
+              <div id="transcript-input-area" style="display: none;">
+                <textarea 
+                  id="transcript-text" 
+                  class="day-search" 
+                  rows="8" 
+                  placeholder="Paste teks transkrip di sini... Tekan Enter untuk memproses."
+                  style="width: 100%; font-family: monospace; font-size: 0.85rem; margin-bottom: 0.5rem;"
+                ></textarea>
+                
+                <div class="course-actions" style="justify-content: flex-start; gap: 0.5rem;">
+                  <button class="back-btn small" id="btn-process-transcript">
+                    <i data-lucide="filter"></i>
+                    <span>Proses & Sembunyikan MK Lulus</span>
+                  </button>
+                </div>
+              
+                <p class="hint" style="margin-top: 0.5rem;">
+                  Mata kuliah dengan nilai <strong>A, AB, B, BC</strong> akan disembunyikan. <br>
+                  Nilai <strong>C, D, E</strong> tetap muncul untuk perbaikan. <br>
+                   <br>
+                  <strong>Cara Penggunaan:</strong> <br>
+                  1. Buka dan login ke <a href="https://akademik.its.ac.id" target="_blank">SI Akademik ITS</a> <br>
+                  2. Pilih menu "Transkrip" dan generate transkrip dengan format "Plain HTML" atau melalui <a href="https://akademik.its.ac.id/rep_transkrip.php" target="_blank">link ini</a> <br>
+                  5. Select semua isi transkrip menggunakan Ctrl + A <br>
+                  6. Copy Paste ke dalam text box di atas <br>
+                  7. Tekan Enter ataupun klik "Proses & Sembunyikan MK Lulus"
+                </p>
+              </div>
+            </div>
+              
             <div class="course-selection-header">
               <label>Pilih Mata Kuliah</label>
               <div class="course-meta">

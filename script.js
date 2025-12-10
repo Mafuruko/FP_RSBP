@@ -12,6 +12,7 @@ let classType = "Normal";
 let avoidDays = [];
 let avoidLecturers = [];
 let selectedCourses = [];
+let excludedCourses = [];
 let allCourses = [];
 let courseSKSMap = {};
 let generatedSchedules = [];
@@ -29,6 +30,7 @@ document.addEventListener("DOMContentLoaded", () => {
   loadScheduleData();
   setupEventListeners();
   refreshIcons();
+  setupTranscriptListeners();
 });
 
 // Load CSV Data
@@ -433,10 +435,16 @@ function renderCourseSelector(searchTerm = "") {
   const semesterFilter = document.getElementById("semester-filter");
   const selectedSemester = semesterFilter ? semesterFilter.value : "";
 
+  // Filter Logic
   const courses = allCourses.filter((course) => {
+    // 1. Check if course is in the Excluded list (Passed courses)
+    if (excludedCourses.includes(course)) return false; 
+
+    // 2. Check Search Term
     const matchText = course.toLowerCase().includes(normalizedTerm);
     if (!matchText) return false;
 
+    // 3. Check Semester Filter
     if (selectedSemester) {
       const hasSemester = scheduleData.some(
         (e) => e.mataKuliah === course && String(e.semester) === selectedSemester
@@ -446,17 +454,19 @@ function renderCourseSelector(searchTerm = "") {
     return true;
   });
 
+  // Empty State
   if (courses.length === 0) {
     container.innerHTML = `
       <div class="course-empty">
         <i data-lucide="search-x"></i>
-        <p>Mata Kuliah tidak ditemukan</p>
+        <p>Mata Kuliah tidak ditemukan (atau sudah lulus)</p>
       </div>
     `;
     refreshIcons();
     return;
   }
 
+  // Render Items
   container.innerHTML = courses
     .map((course) => {
       const checked = selectedCourses.includes(course) ? "checked" : "";
@@ -470,14 +480,14 @@ function renderCourseSelector(searchTerm = "") {
     })
     .join("");
 
-  // Add click handlers
+  // Re-attach Event Listeners (Same as before)
   document.querySelectorAll(".course-item").forEach((item) => {
     item.addEventListener("click", (e) => {
       const checkbox = item.querySelector("input");
       const course = checkbox.value;
 
       if (e.target.tagName === "LABEL") {
-        e.preventDefault(); // cegah toggle ganda dari label
+        e.preventDefault(); 
         checkbox.checked = !checkbox.checked;
       } else if (e.target.tagName !== "INPUT") {
         checkbox.checked = !checkbox.checked;
@@ -845,6 +855,148 @@ function groupScheduleByDay(schedule) {
   });
 
   return grouped;
+}
+
+// --- Transcript / Transcript Reader Integration ---
+function setupTranscriptListeners() {
+  // Toggle visibility
+  const toggleBtn = document.getElementById("toggle-transcript");
+  const inputArea = document.getElementById("transcript-input-area");
+  
+  if (toggleBtn && inputArea) {
+    toggleBtn.addEventListener("click", () => {
+      const isHidden = inputArea.style.display === "none";
+      inputArea.style.display = isHidden ? "block" : "none";
+      toggleBtn.textContent = isHidden ? "Tutup" : "Buka/Tutup";
+    });
+  }
+
+  // Handle "Process" Button
+  const btnProcess = document.getElementById("btn-process-transcript");
+  if (btnProcess) {
+    btnProcess.addEventListener("click", () => {
+      processTranscript();
+    });
+  }
+
+  // Handle "Enter" key in Textarea
+  const txtArea = document.getElementById("transcript-text");
+  if (txtArea) {
+    txtArea.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") {
+        e.preventDefault(); // Prevent new line
+        processTranscript();
+      }
+    });
+  }
+}
+
+function processTranscript() {
+  const rawText = document.getElementById("transcript-text").value;
+  if (!rawText.trim()) {
+    showToast("Teks transkrip kosong!", "error");
+    return;
+  }
+
+  // 1. Parse text to get Name AND Grade
+  const detectedCourses = parseTranscriptText(rawText); // Returns [{name: "...", grade: "..."}, ...]
+  
+  if (detectedCourses.length === 0) {
+    showToast("Tidak ada mata kuliah yang terdeteksi.", "error");
+    return;
+  }
+
+  let hiddenCount = 0;
+  let keptCount = 0;
+
+  // Define grades that are considered "Passed" and should be HIDDEN.
+  // C, D, E are NOT in this list, so they will remain visible.
+  const passingGrades = ["A", "AB", "B", "BC"]; 
+
+  const normalize = (str) => str.toLowerCase().replace(/\s+/g, ' ').trim();
+
+  // 2. Iterate through official courses
+  allCourses.forEach(officialCourse => {
+    const normalizedOfficial = normalize(officialCourse);
+    
+    // Find if this official course exists in the user's transcript
+    const match = detectedCourses.find(d => normalizedOfficial.includes(normalize(d.name)));
+
+    if (match) {
+      // Check the grade
+      const grade = match.grade.toUpperCase();
+      
+      if (passingGrades.includes(grade)) {
+        // High grade -> Hide it (Exclude)
+        if (!excludedCourses.includes(officialCourse)) {
+          excludedCourses.push(officialCourse);
+          
+          // Also remove from selected if it was currently selected
+          if (selectedCourses.includes(officialCourse)) {
+            selectedCourses = selectedCourses.filter(c => c !== officialCourse);
+          }
+          hiddenCount++;
+        }
+      } else {
+        // Low grade (C, D, E) -> Keep it visible (Do nothing)
+        keptCount++;
+      }
+    }
+  });
+
+  // 3. Refresh UI
+  renderCourseSelector(); // This filters out the excludedCourses
+  updateSelectedCount();
+  
+  showToast(`Selesai! ${hiddenCount} MK lulus disembunyikan. ${keptCount} MK nilai rendah tetap muncul.`, "success");
+}
+
+function parseTranscriptText(text) {
+  const lines = text.split('\n');
+  const results = []; // Array of objects { name, grade }
+  let isInTable = false;
+
+  const codeRegex = /^[A-Z]{2}\d+/; // Matches EF234, etc.
+
+  lines.forEach(line => {
+    const trimmed = line.trim();
+    if (!trimmed) return;
+
+    // Detect Table Boundaries
+    if (trimmed.startsWith("Kode") && trimmed.includes("Nama Mata Kuliah")) {
+      isInTable = true;
+      return;
+    }
+    if (trimmed.startsWith("--- Tahap:") || trimmed.startsWith("Total Sks") || trimmed.startsWith("IP Tahap")) {
+      isInTable = false;
+      return;
+    }
+
+    // Process Line
+    if (codeRegex.test(trimmed)) {
+        // Split by whitespace
+        const parts = trimmed.split(/\s+/);
+        
+        // Ensure structure: [Kode, Name..., SKS, Historis, Grade]
+        if (parts.length >= 5) {
+            // Last element is the Grade (Nilai)
+            const grade = parts[parts.length - 1];
+            
+            // Name is between index 1 and -3
+            const nameParts = parts.slice(1, -3);
+            const fullName = nameParts.join(" ");
+            
+            if (fullName.length > 2) {
+                results.push({
+                    name: fullName,
+                    grade: grade
+                });
+            }
+        }
+    }
+  });
+
+  return results;
 }
 
 // Toast Notification
