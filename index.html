@@ -180,7 +180,10 @@
             <h2>Step 2: Pilih Mata Kuliah</h2>
             <div class="course-selection-header">
               <label>Pilih Mata Kuliah</label>
-              <span id="selected-count">0 dipilih</span>
+              <div class="course-meta">
+                <span id="selected-count">0 dipilih</span>
+                <span id="selected-sks">0 SKS</span>
+              </div>
             </div>
             <div class="search-wrapper">
               <input
@@ -190,6 +193,28 @@
                 placeholder="Cari mata kuliah..."
                 autocomplete="off"
               />
+            </div>
+            <div class="course-toolbar">
+              <div class="filter-group">
+                <label for="semester-filter">Filter Semester</label>
+                <select id="semester-filter">
+                  <option value="">Semua semester</option>
+                </select>
+              </div>
+              <div class="course-actions">
+                <button
+                  class="chip-btn small"
+                  onclick="selectAllVisibleCourses()"
+                >
+                  Pilih semua yang terlihat
+                </button>
+                <button
+                  class="chip-btn small secondary"
+                  onclick="clearAllSelectedCourses()"
+                >
+                  Hapus semua pilihan
+                </button>
+              </div>
             </div>
             <div id="course-selector" class="course-grid"></div>
             <div class="step-navigation">
@@ -212,6 +237,7 @@
                 <span id="results-count">0 kombinasi</span>
                 <span id="results-sks">0 SKS</span>
               </div>
+              <div id="results-badges" class="results-badges"></div>
               <div class="results-navigation">
                 <button id="prev-schedule" class="nav-btn">
                   <i data-lucide="arrow-left"></i>
@@ -221,10 +247,15 @@
                   <i data-lucide="arrow-right"></i>
                 </button>
               </div>
+              <button class="chip-btn small" onclick="copyCurrentSchedule()">
+                Salin kombinasi ini
+              </button>
             </div>
             <div id="generated-schedule" class="schedule-grid"></div>
+            <br />
             <button class="back-btn" onclick="goToStep(2)">
               <i data-lucide="arrow-left"></i>
+
               <span>Kembali ke Pilih Mata Kuliah</span>
             </button>
           </div>

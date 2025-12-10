@@ -119,6 +119,20 @@ body {
   box-shadow: 0 10px 18px rgba(43, 122, 255, 0.25);
 }
 
+.chip-btn.small {
+  padding: 0.5rem 0.9rem;
+  font-size: 0.9rem;
+  border: 1px solid hsl(var(--border));
+  color: hsl(var(--foreground));
+  background: hsl(var(--secondary));
+  box-shadow: 0 8px 16px rgba(43, 122, 255, 0.08);
+}
+
+.chip-btn.small.secondary {
+  background: hsl(var(--card));
+  color: hsl(var(--muted));
+}
+
 /* Tabs */
 .main-tabs {
   display: flex;
@@ -596,9 +610,66 @@ body {
   font-size: 1rem;
 }
 
-#selected-count {
+.course-meta {
+  display: flex;
+  gap: 0.75rem;
   color: hsl(var(--muted));
   font-weight: 600;
+}
+
+#selected-count,
+#selected-sks {
+  color: hsl(var(--muted));
+  font-weight: 600;
+}
+
+.course-toolbar {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  margin: 0.4rem 0 0.8rem;
+}
+
+.course-actions {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.filter-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  min-width: 220px;
+}
+
+.filter-group label {
+  font-weight: 700;
+  color: hsl(var(--muted));
+  font-size: 0.95rem;
+  margin-left: 2px;
+}
+
+.filter-group select {
+  padding: 0.65rem 0.8rem;
+  border: 1px solid hsl(var(--border));
+  border-radius: 12px;
+  background: hsl(var(--card));
+  font-weight: 700;
+  color: hsl(var(--foreground));
+  box-shadow: 0 10px 20px rgba(17, 24, 39, 0.08);
+}
+
+@media (max-width: 768px) {
+  .course-toolbar {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  .course-actions {
+    width: 100%;
+  }
 }
 
 .course-search {
@@ -670,7 +741,6 @@ body {
   height: 28px;
   color: hsl(var(--muted));
 }
-
 .course-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
@@ -796,6 +866,23 @@ button {
   color: hsl(var(--foreground));
 }
 
+.results-badges {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  align-items: center;
+  font-weight: 700;
+}
+
+.results-badge {
+  padding: 0.4rem 0.7rem;
+  border-radius: 999px;
+  border: 1px solid hsl(var(--border));
+  background: hsl(var(--secondary));
+  color: hsl(var(--muted));
+  font-size: 0.9rem;
+}
+
 .results-navigation {
   display: inline-flex;
   align-items: center;
@@ -887,8 +974,8 @@ button {
     align-items: stretch;
   }
 
-  .results-navigation {
-    width: 100%;
-    justify-content: space-between;
+.results-navigation {
+  width: 100%;
+  justify-content: space-between;
   }
 }

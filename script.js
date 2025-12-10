@@ -13,6 +13,7 @@ let avoidDays = [];
 let avoidLecturers = [];
 let selectedCourses = [];
 let allCourses = [];
+let courseSKSMap = {};
 let generatedSchedules = [];
 let currentScheduleIndex = 0;
 let daySearchTerm = "";
@@ -41,6 +42,7 @@ async function loadScheduleData() {
       return !kelas.includes("RPL") && !kelas.includes("RKA");
     });
     allCourses = [...new Set(scheduleData.map((e) => e.mataKuliah))].sort();
+    courseSKSMap = buildCourseSKSMap(scheduleData);
     filteredData = [...scheduleData];
     updateUI();
     populateLecturerSelect();
@@ -49,6 +51,16 @@ async function loadScheduleData() {
   } catch (error) {
     showToast("Gagal memuat data jadwal", "error");
   }
+}
+
+function buildCourseSKSMap(data) {
+  const map = {};
+  data.forEach((entry) => {
+    if (!map[entry.mataKuliah]) {
+      map[entry.mataKuliah] = entry.sks;
+    }
+  });
+  return map;
 }
 
 // Parse CSV
@@ -199,6 +211,18 @@ function setupEventListeners() {
     });
   }
 
+  // Semester filter (Step 2)
+  const semesterFilter = document.getElementById("semester-filter");
+  if (semesterFilter) {
+    semesterFilter.addEventListener("change", () => {
+      renderCourseSelector(
+        document.getElementById("course-search")
+          ? document.getElementById("course-search").value
+          : ""
+      );
+    });
+  }
+
   // Schedule navigation
   document.getElementById("prev-schedule").addEventListener("click", () => {
     if (currentScheduleIndex > 0) {
@@ -219,6 +243,7 @@ function setupEventListeners() {
 function updateUI() {
   updateStatistics();
   updateFilterOptions();
+  populateSemesterFilter();
   renderScheduleCards();
 }
 
@@ -387,12 +412,39 @@ function populateLecturerSelect() {
   });
 }
 
+function populateSemesterFilter() {
+  const select = document.getElementById("semester-filter");
+  if (!select) return;
+  const semesters = [...new Set(scheduleData.map((e) => e.semester))].sort(
+    (a, b) => a - b
+  );
+  select.innerHTML = '<option value="">Semua semester</option>';
+  semesters.forEach((sem) => {
+    const option = document.createElement("option");
+    option.value = sem;
+    option.textContent = `Semester ${sem}`;
+    select.appendChild(option);
+  });
+}
+
 function renderCourseSelector(searchTerm = "") {
   const container = document.getElementById("course-selector");
   const normalizedTerm = searchTerm.trim().toLowerCase();
-  const courses = allCourses.filter((course) =>
-    course.toLowerCase().includes(normalizedTerm)
-  );
+  const semesterFilter = document.getElementById("semester-filter");
+  const selectedSemester = semesterFilter ? semesterFilter.value : "";
+
+  const courses = allCourses.filter((course) => {
+    const matchText = course.toLowerCase().includes(normalizedTerm);
+    if (!matchText) return false;
+
+    if (selectedSemester) {
+      const hasSemester = scheduleData.some(
+        (e) => e.mataKuliah === course && String(e.semester) === selectedSemester
+      );
+      return hasSemester;
+    }
+    return true;
+  });
 
   if (courses.length === 0) {
     container.innerHTML = `
@@ -447,10 +499,48 @@ function renderCourseSelector(searchTerm = "") {
   refreshIcons();
 }
 
+// Course selection helpers
+function selectAllVisibleCourses() {
+  const items = document.querySelectorAll(".course-item");
+  items.forEach((item) => {
+    const checkbox = item.querySelector("input");
+    const course = checkbox.value;
+    checkbox.checked = true;
+    item.classList.add("selected");
+    if (!selectedCourses.includes(course)) {
+      selectedCourses.push(course);
+    }
+  });
+  updateSelectedCount();
+}
+
+function clearAllSelectedCourses() {
+  selectedCourses = [];
+  const items = document.querySelectorAll(".course-item");
+  items.forEach((item) => {
+    const checkbox = item.querySelector("input");
+    checkbox.checked = false;
+    item.classList.remove("selected");
+  });
+  updateSelectedCount();
+}
+
+function getSelectedTotalSKS() {
+  return selectedCourses.reduce((sum, course) => {
+    const sks = courseSKSMap[course] || 0;
+    return sum + sks;
+  }, 0);
+}
+
 function updateSelectedCount() {
   document.getElementById(
     "selected-count"
   ).textContent = `${selectedCourses.length} dipilih`;
+  const totalSKS = getSelectedTotalSKS();
+  const selectedSKSEl = document.getElementById("selected-sks");
+  if (selectedSKSEl) {
+    selectedSKSEl.textContent = `${totalSKS} SKS`;
+  }
 }
 
 function updateAvoidDaysList() {
@@ -673,6 +763,10 @@ function renderGeneratedSchedule() {
 
   const schedule = generatedSchedules[currentScheduleIndex];
   const totalSKS = schedule.reduce((sum, e) => sum + e.sks, 0);
+  const avoidDayHits = schedule.filter((e) => avoidDays.includes(e.hari)).length;
+  const avoidLecturerHits = schedule.filter((e) =>
+    avoidLecturers.includes(e.dosen)
+  ).length;
 
   document.getElementById(
     "results-count"
@@ -687,6 +781,15 @@ function renderGeneratedSchedule() {
     currentScheduleIndex === 0;
   document.getElementById("next-schedule").disabled =
     currentScheduleIndex === generatedSchedules.length - 1;
+
+  // Render badges info
+  const badgesContainer = document.getElementById("results-badges");
+  if (badgesContainer) {
+    badgesContainer.innerHTML = `
+      <span class="results-badge">Hari dihindari: ${avoidDayHits}</span>
+      <span class="results-badge">Dosen dihindari: ${avoidLecturerHits}</span>
+    `;
+  }
 
   // Group by day and render
   const grouped = groupScheduleByDay(schedule);
@@ -707,6 +810,23 @@ function renderGeneratedSchedule() {
     )
     .join("");
   refreshIcons();
+}
+
+// Copy current schedule to clipboard
+function copyCurrentSchedule() {
+  if (generatedSchedules.length === 0) return;
+  const schedule = generatedSchedules[currentScheduleIndex];
+  const lines = schedule
+    .sort((a, b) => a.hari.localeCompare(b.hari) || a.jam.localeCompare(b.jam))
+    .map(
+      (e) =>
+        `${e.mataKuliah} (${e.kelas}) - ${e.hari} ${e.jam} - ${e.dosen} - ${e.ruangan} - ${e.sks} SKS`
+    );
+  const text = lines.join("\n");
+  navigator.clipboard
+    .writeText(text)
+    .then(() => showToast("Kombinasi disalin ke clipboard", "success"))
+    .catch(() => showToast("Gagal menyalin jadwal", "error"));
 }
 
 // Group Schedule by Day
