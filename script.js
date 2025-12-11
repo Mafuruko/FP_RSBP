@@ -179,7 +179,9 @@ function setupEventListeners() {
 
   // Builder: Max SKS
   document.getElementById("max-sks").addEventListener("input", (e) => {
-    maxSKS = parseInt(e.target.value);
+    const parsed = parseInt(e.target.value, 10);
+    maxSKS = Number.isFinite(parsed) ? parsed : 0;
+    updateSelectedCount();
   });
 
   // Builder: Avoid days
@@ -544,13 +546,36 @@ function getSelectedTotalSKS() {
 }
 
 function updateSelectedCount() {
-  document.getElementById(
-    "selected-count"
-  ).textContent = `${selectedCourses.length} selected`;
   const totalSKS = getSelectedTotalSKS();
+  const selectedCountEl = document.getElementById("selected-count");
   const selectedSKSEl = document.getElementById("selected-sks");
+  const meta = document.querySelector(".course-meta");
+  const warningEl = document.getElementById("sks-warning");
+  const generateBtn = document.querySelector(".generate-btn");
+  const isOverLimit = totalSKS > maxSKS;
+
+  if (selectedCountEl) {
+    selectedCountEl.textContent = `${selectedCourses.length} selected`;
+  }
   if (selectedSKSEl) {
     selectedSKSEl.textContent = `${totalSKS} SKS`;
+  }
+
+  if (meta) {
+    meta.classList.toggle("over-limit", isOverLimit);
+  }
+
+  if (warningEl) {
+    if (isOverLimit) {
+      warningEl.textContent = `SKS limit exceeded (${totalSKS}/${maxSKS})`;
+      warningEl.classList.add("visible");
+    } else {
+      warningEl.classList.remove("visible");
+    }
+  }
+
+  if (generateBtn) {
+    generateBtn.disabled = isOverLimit;
   }
 }
 
@@ -609,6 +634,12 @@ function goToStep(step) {
 function generateSchedules() {
   if (selectedCourses.length === 0) {
     showToast("Pick at least one course!", "error");
+    return;
+  }
+
+  const totalSelectedSKS = getSelectedTotalSKS();
+  if (totalSelectedSKS > maxSKS) {
+    showToast("Selected SKS exceeds your limit.", "error");
     return;
   }
 

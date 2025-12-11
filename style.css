@@ -15,6 +15,7 @@
   --radius-lg: 16px;
   --success: 143 64% 45%;
   --warning: 35 93% 66%;
+  --danger: 0 74% 55%;
   --semester-1: 142 70% 44%;
   --semester-2: 215 88% 58%;
   --semester-3: 262 83% 58%;
@@ -623,6 +624,27 @@ body {
   font-weight: 600;
 }
 
+.course-meta.over-limit,
+.course-meta.over-limit span {
+  color: hsl(var(--danger));
+}
+
+.sks-warning {
+  display: none;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.25rem 0.65rem;
+  border-radius: 999px;
+  background: hsl(var(--danger) / 0.08);
+  color: hsl(var(--danger));
+  border: 1px solid hsl(var(--danger) / 0.4);
+  font-weight: 700;
+}
+
+.sks-warning.visible {
+  display: inline-flex;
+}
+
 .course-toolbar {
   display: flex;
   align-items: flex-end;
@@ -823,6 +845,13 @@ button {
 .generate-btn:hover {
   opacity: 0.92;
   transform: translateY(-1px);
+}
+
+.generate-btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
 }
 
 .back-btn {
