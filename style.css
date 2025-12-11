@@ -1014,11 +1014,12 @@ button {
 /* Prerequisite Indicators */
 .course-item {
   position: relative;
+  padding-right: 2.8rem; /* leave space for warning icon */
 }
 
 .course-item .prereq-icon {
   position: absolute;
-  right: 10px;
+  right: 12px;
   top: 50%;
   transform: translateY(-50%);
   width: 20px;
