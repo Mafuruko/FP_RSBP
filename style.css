@@ -276,6 +276,14 @@ body {
   outline: 1.5px solid hsl(var(--primary));
 }
 
+#transcript-text {
+  resize: vertical;
+  max-width: 100%;
+  min-height: 160px;
+  box-sizing: border-box;
+  overflow: auto;
+}
+
 /* Stats */
 .stats-grid {
   display: grid;
