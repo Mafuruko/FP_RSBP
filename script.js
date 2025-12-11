@@ -272,9 +272,9 @@ function updateFilterOptions() {
 
   let options = [];
   switch (filterType) {
-    case "day":
-      options = ["Senin", "Selasa", "Rabu", "Kamis", "Jumat"];
-      break;
+    // case "day":
+    //   options = ["Senin", "Selasa", "Rabu", "Kamis", "Jumat"];
+    //   break;
     case "room":
       options = [
         ...new Set(
