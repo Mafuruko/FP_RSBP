@@ -13,6 +13,7 @@ let avoidDays = [];
 let avoidLecturers = [];
 let selectedCourses = [];
 let excludedCourses = [];
+let transcriptExcludedCourses = [];
 let allCourses = [];
 let courseSKSMap = {};
 let generatedSchedules = [];
@@ -884,6 +885,13 @@ function setupTranscriptListeners() {
     });
   }
 
+  const btnRevert = document.getElementById("btn-revert-transcript");
+  if (btnRevert) {
+    btnRevert.addEventListener("click", () => {
+      revertTranscript();
+    });
+  }
+
   // Handle "Enter" key in Textarea
   const txtArea = document.getElementById("transcript-text");
   if (txtArea) {
@@ -894,6 +902,26 @@ function setupTranscriptListeners() {
       }
     });
   }
+}
+
+function revertTranscript(){  
+  // 1. Check for any excluded courses
+  if(transcriptExcludedCourses.length === 0){
+    showToast("Tidak ada excluded course dari transkrip!", "error");
+    return;
+  }
+
+  let hiddenCount = transcriptExcludedCourses.length;
+
+  // 2. Set excluded course to 0
+  excludedCourses = excludedCourses.filter(item => !transcriptExcludedCourses.includes(item))
+  transcriptExcludedCourses.length = 0;
+
+  // 3. Refresh UI
+  renderCourseSelector(); // This filters out the excludedCourses
+  updateSelectedCount();
+
+  showToast(`Selesai! ${hiddenCount} MK lulus dipulihkan.`, "success");
 }
 
 function processTranscript() {
@@ -935,6 +963,7 @@ function processTranscript() {
         // High grade -> Hide it (Exclude)
         if (!excludedCourses.includes(officialCourse)) {
           excludedCourses.push(officialCourse);
+          transcriptExcludedCourses.push(officialCourse);
           
           // Also remove from selected if it was currently selected
           if (selectedCourses.includes(officialCourse)) {
