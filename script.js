@@ -708,13 +708,19 @@ function generateScheduleCombinations(preferences) {
     return { combo, avoidedDayCount, avoidedLecturerCount, timeScore };
   });
 
-  // Sort dengan prioritas STRICT:
-  // 1. PALING PRIORITAS: 0 hari dihindari DAN 0 dosen dihindari
-  // 2. Prioritas kedua: 0 hari dihindari tapi ada dosen dihindari
-  // 3. Prioritas ketiga: Ada hari dihindari tapi 0 dosen dihindari
-  // 4. Paling akhir: Ada hari DAN dosen dihindari
-  scored.sort((a, b) => {
-    // Hitung total penalty (makin kecil makin bagus)
+  // Pisahkan kombinasi yang bersih (tanpa kendala) dan yang memiliki kendala
+  const cleanCombos = scored.filter(
+    (s) => s.avoidedDayCount === 0 && s.avoidedLecturerCount === 0
+  );
+  const constrainedCombos = scored.filter(
+    (s) => s.avoidedDayCount > 0 || s.avoidedLecturerCount > 0
+  );
+
+  // Urutkan kombinasi bersih berdasarkan skor waktu (terbaik dulu)
+  cleanCombos.sort((a, b) => b.timeScore - a.timeScore);
+
+  // Urutkan kombinasi dengan kendala berdasarkan penalti, lalu skor waktu
+  constrainedCombos.sort((a, b) => {
     const penaltyA =
       a.avoidedDayCount * 10000 + a.avoidedLecturerCount * 100;
     const penaltyB =
@@ -723,15 +729,14 @@ function generateScheduleCombinations(preferences) {
     if (penaltyA !== penaltyB) {
       return penaltyA - penaltyB;
     }
-
-    // Jika penalty sama, urutkan berdasarkan time score
     return b.timeScore - a.timeScore;
   });
 
-  // Ambil maksimal 20 kombinasi untuk variasi yang lebih banyak
-  // Kombinasi awal = benar-benar clean (0 avoid)
-  // Kombinasi akhir = tetap ada yang mengandung avoid sebagai backup
-  return scored.slice(0, 20).map((item) => item.combo);
+  // Gabungkan keduanya, dengan yang bersih diutamakan
+  const finalSortedCombos = [...cleanCombos, ...constrainedCombos];
+
+  // Ambil maksimal 20 kombinasi
+  return finalSortedCombos.slice(0, 20).map((item) => item.combo);
 }
 
 // Check Time Conflicts
