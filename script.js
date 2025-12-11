@@ -19,6 +19,7 @@ let courseSKSMap = {};
 let generatedSchedules = [];
 let currentScheduleIndex = 0;
 let daySearchTerm = "";
+let passedCoursesWithGrade = [];
 
 function refreshIcons() {
   if (window.lucide && typeof window.lucide.createIcons === "function") {
@@ -151,6 +152,9 @@ function setupEventListeners() {
       e.target.classList.add("active");
       colorBy = e.target.dataset.color;
       renderScheduleCards();
+      if (generatedSchedules.length > 0) {
+        renderGeneratedSchedule();
+      }
     });
   });
 
@@ -474,10 +478,31 @@ function renderCourseSelector(searchTerm = "") {
     .map((course) => {
       const checked = selectedCourses.includes(course) ? "checked" : "";
       const id = `course-${course.replace(/\s/g, "-")}`;
+      
+      // Prerequisite Check for visual indicator
+      const prereqCheck = checkPrerequisites(course, passedCoursesWithGrade);
+      let statusClass = "";
+      let statusHint = "";
+
+      if (!prereqCheck.isMet) {
+        statusClass = "prereq-missing";
+        statusHint = `(Butuh: ${prereqCheck.missing.join(", ")})`;
+      } else if (PREREQUISITE_MAP[course]) {
+        statusClass = "prereq-met";
+      }
+
+      // We disable the checkbox visually but rely on the click handler to block selection
+      const isDisabled = !prereqCheck.isMet && !checked ? 'disabled' : '';
+
       return `
-        <div class="course-item ${checked ? "selected" : ""}" data-course="${course}">
-            <input type="checkbox" id="${id}" value="${course}" ${checked}>
-            <label for="${id}">${course}</label>
+        <div class="course-item ${checked ? "selected" : ""} ${statusClass}" 
+             data-course="${course}">
+            <input type="checkbox" id="${id}" value="${course}" ${checked} ${isDisabled}>
+            <label for="${id}">
+                ${course} 
+                <span class="prereq-hint">${statusHint}</span>
+            </label>
+            ${!prereqCheck.isMet ? '<i data-lucide="alert-triangle" class="prereq-icon missing"></i>' : ''}
         </div>
     `;
     })
@@ -489,12 +514,27 @@ function renderCourseSelector(searchTerm = "") {
       const checkbox = item.querySelector("input");
       const course = checkbox.value;
 
-      if (e.target.tagName === "LABEL") {
+      const prereqCheck = checkPrerequisites(course, passedCoursesWithGrade);
+      let isChecked = checkbox.checked;
+
+      // Handle click on label/div area to prevent double toggle
+      if (e.target.tagName === "LABEL" || e.target.closest('label')) {
         e.preventDefault(); 
-        checkbox.checked = !checkbox.checked;
-      } else if (e.target.tagName !== "INPUT") {
-        checkbox.checked = !checkbox.checked;
+        isChecked = !isChecked; // Simulate the intended toggle
+      } else if (e.target.tagName !== "INPUT" && !e.target.closest('.prereq-icon')) {
+        isChecked = !isChecked; // Simulate the intended toggle
       }
+
+      if (!prereqCheck.isMet && isChecked) {
+        e.preventDefault(); 
+        showToast(`Gagal memilih: Prasyarat ${prereqCheck.missing.join(", ")} belum terpenuhi (Nilai harus D atau lebih tinggi).`, "error");
+        // Ensure checkbox remains unchecked and list item unselected
+        checkbox.checked = false;
+        item.classList.remove("selected");
+        return;
+      }
+
+      checkbox.checked = isChecked;
 
       if (checkbox.checked) {
         item.classList.add("selected");
@@ -518,6 +558,12 @@ function selectAllVisibleCourses() {
   items.forEach((item) => {
     const checkbox = item.querySelector("input");
     const course = checkbox.value;
+    
+    const prereqCheck = checkPrerequisites(course, passedCoursesWithGrade);
+    if (!prereqCheck.isMet) {
+      return; 
+    }
+
     checkbox.checked = true;
     item.classList.add("selected");
     if (!selectedCourses.includes(course)) {
@@ -894,7 +940,100 @@ function groupScheduleByDay(schedule) {
   return grouped;
 }
 
+// --- PREREQUISITE CHECK LOGIC ---
+const PREREQUISITE_MAP = {
+  "Kalkulus 2": ["Kalkulus 1"],
+  "Teori Graf": ["Kalkulus 2"],
+  "Matematika Diskrit": ["Kalkulus 2"],
+  "Otomata": ["Kalkulus 2"],
+  "Probabilitas dan Statistik": ["Matematika Diskrit"],
+  "Pemodelan dan Simulasi": ["Probabilitas dan Statistik"],
+  "Analisis Data Multivariat": ["Probabilitas dan Statistik"],
+  "Simulasi Sistem Dinamis": ["Pemodelan dan Simulasi"],
+  "Simulasi Berbasis Agen": ["Pemodelan dan Simulasi"],
+  "Komputasi Numerik": ["Aljabar Linier"],
+  "Struktur Data": ["Dasar Pemrograman"],
+  "Perancangan dan Analisis Algoritma": ["Struktur Data"],
+  "Pemrograman Pengolahan Sinyal": ["Perancangan dan Analisis Algoritma"],
+  "Pemrograman Berorientasi Objek": ["Struktur Data"],
+  "Pemrograman Perangkat Bergerak": ["Pemrograman Berorientasi Objek"],
+  "Pemrograman Berbasis Kerangka Kerja": ["Pemrograman Berorientasi Objek"],
+  "Interaksi Manusia dan Komputer": ["Pemrograman Berorientasi Objek"],
+  "Grafika Komputer": ["Pemrograman Berorientasi Objek"],
+  "Realitas X": ["Grafika Komputer"],
+  "Konsep Kecerdasan Artifisial": ["Struktur Data"],
+  "Pembelajaran Mesin": ["Konsep Kecerdasan Artifisial"],
+  "Penambangan Data": ["Pembelajaran Mesin"],
+  "Pengolahan Citra dan Visi Komputer": ["Pembelajaran Mesin"],
+  "Pembelajaran Mendalam": ["Pembelajaran Mesin"],
+  "Jaringan Komputer": ["Organisasi Komputer"],
+  "Jaringan Komputer": ["Sistem Operasi"],
+  "Keamanan Aplikasi": ["Sistem Operasi", "Organisasi Komputer"],
+  "Jaringan Komputer": ["Sistem Operasi"],
+  "Teknologi antar Jaringan": ["Jaringan Komputer"],
+  "Jaringan Nirkabel": ["Jaringan Komputer"],
+  "Keamanan Jaringan": ["Jaringan Komputer"],
+  "Keamanan Informasi": ["Jaringan Komputer"],
+  "Komputasi Pervasif dan Jaringan Sensor": ["Jaringan Komputer"],
+  "Komputasi Bergerak ": ["Jaringan Komputer"],
+  "Pemrograman Jaringan": ["Jaringan Komputer"],
+  "Manajemen Basis Data": ["Sistem Basis Data"],
+  "Rekayasa Sistem Berbasis Pengetahuan": ["Manajemen Basis Data"],
+  "Tata Kelola Teknologi Informasi": ["Manajemen Basis Data"],
+  "Sistem Perusahaan": ["Manajemen Basis Data"],
+  "Basis Data Terdistribusi": ["Manajemen Basis Data"],
+  "Audit Sistem": ["Manajemen Basis Data"],
+  "Data Besar": ["Manajemen Basis Data"],
+  "Pemrograman Web": ["Sistem Basis Data"],
+  "Pemrograman Berbasis Antarmuka": ["Pemrograman Web"],
+  "Perancangan Perangkat Lunak": ["Konsep Pengembangan Perangkat Lunak"],
+  "Konstruksi Perangkat Lunak": ["Perancangan Perangkat Lunak"],
+  "Arsitektur Perangkat Lunak": ["Perancangan Perangkat Lunak"],
+  "Evolusi Perangkat Lunak": ["Perancangan Perangkat Lunak"],
+};
+
+// Check Prerequisite: Grade D or higher is considered a pass
+function isPrerequisiteMet(prereqCourseName, passedCourses) {
+  // Passing grades for a prerequisite: D, C, BC, B, AB, A
+  const passingGradesForPrereq = ["A", "AB", "B", "BC", "C", "D"];
+  const normalize = (str) => str.toLowerCase().replace(/\s+/g, " ").trim();
+  const normalizedPrereq = normalize(prereqCourseName);
+
+  const passedEntry = passedCourses.find((p) =>
+    normalize(p.name).includes(normalizedPrereq)
+  );
+
+  if (!passedEntry) {
+    // Course was never taken
+    return false;
+  }
+  
+  // Check if the grade is one of the passing grades
+  return passingGradesForPrereq.includes(passedEntry.grade.toUpperCase());
+}
+
+function checkPrerequisites(courseName, passedCourses) {
+  const prereqs = PREREQUISITE_MAP[courseName];
+  if (!prereqs) {
+    // No prerequisites defined
+    return { isMet: true, missing: [] };
+  }
+
+  const missingPrereqs = [];
+  let isMet = true;
+
+  for (const prereq of prereqs) {
+    if (!isPrerequisiteMet(prereq, passedCourses)) {
+      isMet = false;
+      missingPrereqs.push(prereq);
+    }
+  }
+  
+  return { isMet, missing: missingPrereqs };
+}
+
 // --- Transcript / Transcript Reader Integration ---
+
 function setupTranscriptListeners() {
   // Toggle visibility
   const toggleBtn = document.getElementById("toggle-transcript");
@@ -904,7 +1043,7 @@ function setupTranscriptListeners() {
     toggleBtn.addEventListener("click", () => {
       const isHidden = inputArea.style.display === "none";
       inputArea.style.display = isHidden ? "block" : "none";
-      toggleBtn.textContent = isHidden ? "Close" : "Open";
+      toggleBtn.textContent = isHidden ? "Close" : "Open/Close";
     });
   }
 
@@ -916,13 +1055,6 @@ function setupTranscriptListeners() {
     });
   }
 
-  const btnRevert = document.getElementById("btn-revert-transcript");
-  if (btnRevert) {
-    btnRevert.addEventListener("click", () => {
-      revertTranscript();
-    });
-  }
-
   // Handle "Enter" key in Textarea
   const txtArea = document.getElementById("transcript-text");
   if (txtArea) {
@@ -931,6 +1063,13 @@ function setupTranscriptListeners() {
         e.preventDefault(); // Prevent new line
         processTranscript();
       }
+    });
+  }
+
+  const btnRevert = document.getElementById("btn-revert-transcript");
+  if (btnRevert) {
+    btnRevert.addEventListener("click", () => {
+      revertTranscript();
     });
   }
 }
@@ -958,28 +1097,29 @@ function revertTranscript(){
 function processTranscript() {
   const rawText = document.getElementById("transcript-text").value;
   if (!rawText.trim()) {
-    showToast("Transcript text is empty!", "error");
+    showToast("Teks transkrip kosong!", "error");
     return;
   }
 
-  // 1. Parse text to get Name AND Grade
+  // 1. Parse text to get Name AND Grade for ALL entries
   const detectedCourses = parseTranscriptText(rawText); // Returns [{name: "...", grade: "..."}, ...]
-  
+  passedCoursesWithGrade = detectedCourses; // Store all detected courses and grades globally
+
   if (detectedCourses.length === 0) {
-    showToast("No courses detected in the transcript.", "error");
+    showToast("Tidak ada mata kuliah yang terdeteksi.", "error");
     return;
   }
 
   let hiddenCount = 0;
   let keptCount = 0;
 
-  // Define grades that are considered "Passed" and should be HIDDEN.
-  // C, D, E are NOT in this list, so they will remain visible.
-  const passingGrades = ["A", "AB", "B", "BC"]; 
+  // Define grades that are considered "Passed" and should be HIDDEN. (A, AB, B, BC)
+  const exclusionGrades = ["A", "AB", "B", "BC"]; 
+  excludedCourses = []; // Clear previous exclusions
 
   const normalize = (str) => str.toLowerCase().replace(/\s+/g, ' ').trim();
 
-  // 2. Iterate through official courses
+  // 2. Iterate through official courses and apply exclusion
   allCourses.forEach(officialCourse => {
     const normalizedOfficial = normalize(officialCourse);
     
@@ -987,10 +1127,10 @@ function processTranscript() {
     const match = detectedCourses.find(d => normalizedOfficial.includes(normalize(d.name)));
 
     if (match) {
-      // Check the grade
+      // Check the grade for EXCLUSION
       const grade = match.grade.toUpperCase();
       
-      if (passingGrades.includes(grade)) {
+      if (exclusionGrades.includes(grade)) {
         // High grade -> Hide it (Exclude)
         if (!excludedCourses.includes(officialCourse)) {
           excludedCourses.push(officialCourse);
@@ -1003,17 +1143,17 @@ function processTranscript() {
           hiddenCount++;
         }
       } else {
-        // Low grade (C, D, E) -> Keep it visible (Do nothing)
+        // Low grade (C, D, E) -> Keep it visible, but recorded in passedCoursesWithGrade
         keptCount++;
       }
     }
   });
 
   // 3. Refresh UI
-  renderCourseSelector(); // This filters out the excludedCourses
+  renderCourseSelector(); // This filters out excluded courses AND shows prereq status
   updateSelectedCount();
   
-  showToast(`Done! Hid ${hiddenCount} passed courses. ${keptCount} lower-grade courses stay visible.`, "success");
+  showToast(`Selesai! ${hiddenCount} MK lulus disembunyikan. ${keptCount} MK nilai rendah tetap muncul.`, "success");
 }
 
 function parseTranscriptText(text) {

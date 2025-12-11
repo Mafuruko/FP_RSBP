@@ -1008,3 +1008,48 @@ button {
   justify-content: space-between;
   }
 }
+
+/* Prerequisite Indicators */
+.course-item {
+  position: relative;
+}
+
+.course-item .prereq-icon {
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 20px;
+  height: 20px;
+}
+
+.course-item .prereq-icon.met {
+  color: hsl(var(--success)); /* Green color */
+}
+
+.course-item .prereq-icon.missing {
+  color: hsl(var(--warning)); /* Yellow/Orange color */
+}
+
+/* Style for missing prereq */
+.course-item.prereq-missing {
+  opacity: 0.6;
+  background-color: hsl(var(--warning) / 0.1);
+  cursor: not-allowed;
+}
+
+.course-item.prereq-missing:hover {
+  background-color: hsl(var(--warning) / 0.2);
+}
+
+.course-item.prereq-missing input[type="checkbox"] {
+  /* Hide the checkbox to prevent native click while still allowing its value */
+  pointer-events: none;
+}
+
+.course-item.prereq-missing .prereq-hint {
+  font-size: 0.75rem;
+  color: hsl(var(--warning));
+  font-weight: 500;
+  margin-left: 5px;
+}
