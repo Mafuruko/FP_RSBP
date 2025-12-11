@@ -1079,7 +1079,10 @@ function setupTranscriptListeners() {
 function togglePrerequisite(){
   prereqToggle = !prereqToggle;
   
+  selectedCourses = [];
+  
   renderCourseSelector();
+  updateSelectedCount();
 }
 
 function revertTranscript(){  
@@ -1093,8 +1096,8 @@ function revertTranscript(){
 
   // 2. Set transcript courses to 0
   excludedCourses = excludedCourses.filter(item => !transcriptExcludedCourses.includes(item))
-  transcriptExcludedCourses.length = 0;
-  passedCoursesWithGrade.length = 0;
+  transcriptExcludedCourses = [];
+  passedCoursesWithGrade = [];
 
   // 3. Refresh UI
   renderCourseSelector();
@@ -1159,7 +1162,7 @@ function processTranscript() {
   });
 
   // 3. Refresh UI
-  renderCourseSelector(); // This filters out excluded courses AND shows prereq status
+  renderCourseSelector();
   updateSelectedCount();
   
   showToast(`Selesai! ${hiddenCount} MK lulus disembunyikan. ${keptCount} MK nilai rendah tetap muncul.`, "success");
