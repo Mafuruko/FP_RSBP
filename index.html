@@ -3,10 +3,10 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Smart Scheduling System - Sistem Penjadwalan Kuliah</title>
+    <title>Smart Scheduling System - Course Scheduler</title>
     <meta
       name="description"
-      content="Sistem penjadwalan kuliah informatika yang smart dan efisien untuk mengatur jadwal perkuliahan"
+      content="Smart and efficient Informatics course scheduling system to organize your classes"
     />
     <link rel="stylesheet" href="style.css" />
     <script src="https://unpkg.com/lucide@latest"></script>
@@ -21,16 +21,16 @@
           </span>
           <div>
             <h1>Smart Scheduling System</h1>
-            <p class="subtitle">Sistem Penjadwalan Kuliah Informatika</p>
+            <p class="subtitle">Informatics Course Scheduling</p>
           </div>
         </div>
         <div class="header-actions">
           <div class="toggle-chips">
             <button class="chip-btn toggle-btn active" data-color="time">
-              Warna Waktu
+              Color by Time
             </button>
             <button class="chip-btn toggle-btn" data-color="semester">
-              Warna Semester
+              Color by Semester
             </button>
           </div>
         </div>
@@ -38,8 +38,8 @@
 
       <!-- Main Tabs -->
       <div class="main-tabs">
-        <button class="tab-btn active" data-tab="view">Lihat Jadwal</button>
-        <button class="tab-btn" data-tab="builder">Buat Jadwal</button>
+        <button class="tab-btn active" data-tab="view">View Schedule</button>
+        <button class="tab-btn" data-tab="builder">Build Schedule</button>
       </div>
 
       <!-- View Schedule Tab -->
@@ -48,15 +48,15 @@
         <div class="filters-section">
           <div class="filter-buttons">
             <!-- <button class="filter-type-btn active" data-type="day">Hari</button> -->
-            <button class="filter-type-btn" data-type="room">Ruangan</button>
-            <button class="filter-type-btn" data-type="lecturer">Dosen</button>
+            <button class="filter-type-btn" data-type="room">Room</button>
+            <button class="filter-type-btn" data-type="lecturer">Lecturer</button>
             <button class="filter-type-btn" data-type="semester">
               Semester
             </button>
           </div>
           <div class="filter-select-container">
             <select id="filter-select" class="filter-select">
-              <option value="">Pilih Filter</option>
+              <option value="">Choose a filter</option>
             </select>
             <button id="clear-filter" class="clear-btn" style="display: none">
               <i data-lucide="x"></i>
@@ -67,30 +67,30 @@
         <!-- Statistics -->
         <div class="stats-grid">
           <div class="stat-card">
-            <div class="stat-label">Total Jadwal</div>
+            <div class="stat-label">Total Schedules</div>
             <div class="stat-value" id="total-schedules">0</div>
           </div>
           <div class="stat-card">
-            <div class="stat-label">Mata Kuliah</div>
+            <div class="stat-label">Courses</div>
             <div class="stat-value" id="total-courses">0</div>
           </div>
           <div class="stat-card">
-            <div class="stat-label">Dosen</div>
+            <div class="stat-label">Lecturers</div>
             <div class="stat-value" id="total-lecturers">0</div>
           </div>
           <div class="stat-card">
-            <div class="stat-label">Ruangan</div>
+            <div class="stat-label">Rooms</div>
             <div class="stat-value" id="total-rooms">0</div>
           </div>
         </div>
 
         <!-- Day Tabs -->
         <div class="day-tabs">
-          <button class="day-tab active" data-day="Senin">Senin</button>
-          <button class="day-tab" data-day="Selasa">Selasa</button>
-          <button class="day-tab" data-day="Rabu">Rabu</button>
-          <button class="day-tab" data-day="Kamis">Kamis</button>
-          <button class="day-tab" data-day="Jumat">Jumat</button>
+          <button class="day-tab active" data-day="Senin">Monday</button>
+          <button class="day-tab" data-day="Selasa">Tuesday</button>
+          <button class="day-tab" data-day="Rabu">Wednesday</button>
+          <button class="day-tab" data-day="Kamis">Thursday</button>
+          <button class="day-tab" data-day="Jumat">Friday</button>
         </div>
 
         <div class="search-wrapper">
@@ -98,7 +98,7 @@
             id="day-search"
             class="day-search"
             type="text"
-            placeholder="Cari mata kuliah untuk hari ini..."
+            placeholder="Search courses for this day..."
             autocomplete="off"
           />
         </div>
@@ -112,17 +112,17 @@
         <div class="builder-steps">
           <!-- Step 1: Preferences -->
           <div class="builder-step active" id="step-1">
-            <h2>Step 1: Atur Preferensi</h2>
+            <h2>Step 1: Set Preferences</h2>
             <div class="form-grid">
               <!-- Max SKS -->
               <div class="form-group">
-                <label>Maksimal SKS</label>
+                <label>Maximum Credits (SKS)</label>
                 <input type="number" id="max-sks" value="24" min="1" max="30" />
               </div>
 
               <!-- Class Type -->
               <div class="form-group">
-                <label>Jenis Kelas</label>
+                <label>Class Type</label>
                 <div class="class-type-buttons">
                   <button class="class-type-btn" data-type="IUP">IUP</button>
                   <button class="class-type-btn active" data-type="Normal">
@@ -133,58 +133,57 @@
 
               <!-- Avoid Days -->
               <div class="form-group full-width">
-                <label>Hari yang Dihindari</label>
+                <label>Days to Avoid</label>
                 <div class="avoid-controls">
                   <select id="avoid-day-select">
-                    <option value="">Pilih Hari</option>
-                    <option value="Senin">Senin</option>
-                    <option value="Selasa">Selasa</option>
-                    <option value="Rabu">Rabu</option>
-                    <option value="Kamis">Kamis</option>
-                    <option value="Jumat">Jumat</option>
+                    <option value="">Select a day</option>
+                    <option value="Senin">Senin (Monday)</option>
+                    <option value="Selasa">Selasa (Tuesday)</option>
+                    <option value="Rabu">Rabu (Wednesday)</option>
+                    <option value="Kamis">Kamis (Thursday)</option>
+                    <option value="Jumat">Jumat (Friday)</option>
                   </select>
-                  <button id="add-avoid-day" class="add-btn">Tambah</button>
+                  <button id="add-avoid-day" class="add-btn">Add</button>
                 </div>
                 <div id="avoid-days-list" class="badge-list"></div>
                 <p class="hint">
-                  Jadwal yang tidak ada hari ini akan diprioritaskan di urutan
-                  teratas
+                  Schedules that avoid these days are prioritized at the top.
                 </p>
               </div>
 
               <!-- Avoid Lecturers -->
               <div class="form-group full-width">
-                <label>Dosen yang Dihindari</label>
+                <label>Lecturers to Avoid</label>
                 <div class="avoid-controls">
                   <select id="avoid-lecturer-select">
-                    <option value="">Pilih Dosen</option>
+                    <option value="">Select a lecturer</option>
                   </select>
                   <button id="add-avoid-lecturer" class="add-btn">
-                    Tambah
+                    Add
                   </button>
                 </div>
                 <div id="avoid-lecturers-list" class="badge-list"></div>
                 <p class="hint">
-                  Sistem akan mengurangi prioritas jadwal dengan dosen ini
+                  The system will lower the priority of schedules with these lecturers.
                 </p>
               </div>
             </div>
             <button class="next-btn" onclick="goToStep(2)">
               <i data-lucide="arrow-right"></i>
-              <span>Lanjut ke Pilih Mata Kuliah</span>
+              <span>Continue to Choose Courses</span>
             </button>
           </div>
 
           <!-- Step 2: Course Selection -->
           <div class="builder-step" id="step-2">
-            <h2>Step 2: Pilih Mata Kuliah</h2>
+            <h2>Step 2: Choose Courses</h2>
 
             <div class="transcript-section" style="margin-bottom: 1.5rem; padding: 1rem; border: 1px dashed var(--border); border-radius: var(--radius);">
               <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
                 <label style="font-weight: 500; display: flex; align-items: center; gap: 0.5rem;">
-                  <i data-lucide="file-text" style="width: 16px;"></i> Import Transkrip (Filter Lulus)
+                  <i data-lucide="file-text" style="width: 16px;"></i> Import Transcript (Hide Passed Courses)
                 </label>
-                <button class="chip-btn small secondary" id="toggle-transcript">Buka/Tutup</button>
+                <button class="chip-btn small secondary" id="toggle-transcript">Open</button>
               </div>
               
               <div id="transcript-input-area" style="display: none;">
@@ -192,39 +191,39 @@
                   id="transcript-text" 
                   class="day-search" 
                   rows="8" 
-                  placeholder="Paste teks transkrip di sini... Tekan Enter untuk memproses."
+                  placeholder="Paste transcript text here... Press Enter to process."
                   style="width: 100%; font-family: monospace; font-size: 0.85rem; margin-bottom: 0.5rem;"
                 ></textarea>
                 
                 <div class="course-actions" style="justify-content: flex-start; gap: 0.5rem;">
                   <button class="back-btn small" id="btn-process-transcript">
                     <i data-lucide="filter"></i>
-                    <span>Proses & Sembunyikan MK Lulus</span>
+                    <span>Process & Hide Passed Courses</span>
                   </button>
                   <button class="back-btn small" id="btn-revert-transcript">
                     <i data-lucide="rotate-ccw"></i>
-                    <span>Pulihkan MK Lulus</span>
+                    <span>Restore Passed Courses</span>
                   </button>
                 </div>
 
                 <p class="hint" style="margin-top: 0.5rem;">
-                  Mata kuliah dengan nilai <strong>A, AB, B, BC</strong> akan disembunyikan. <br>
-                  Nilai <strong>C, D, E</strong> tetap muncul untuk perbaikan. <br>
+                  Courses with grades <strong>A, AB, B, BC</strong> will be hidden. <br>
+                  Grades <strong>C, D, E</strong> stay visible for retakes. <br>
                    <br>
-                  <strong>Cara Penggunaan:</strong> <br>
-                  1. Buka dan login ke <a href="https://akademik.its.ac.id" target="_blank">SI Akademik ITS</a> <br>
-                  2. Pilih menu "Transkrip" dan generate transkrip dengan format "Plain HTML" atau melalui <a href="https://akademik.its.ac.id/rep_transkrip.php" target="_blank">link ini</a> <br>
-                  5. Select semua isi transkrip menggunakan Ctrl + A <br>
-                  6. Copy Paste ke dalam text box di atas <br>
-                  7. Tekan Enter ataupun klik "Proses & Sembunyikan MK Lulus"
+                  <strong>How to use:</strong> <br>
+                  1. Log in to <a href="https://akademik.its.ac.id" target="_blank">SI Akademik ITS</a> <br>
+                  2. Open the "Transcript" menu and generate a transcript in "Plain HTML" or via <a href="https://akademik.its.ac.id/rep_transkrip.php" target="_blank">this link</a> <br>
+                  3. Select all transcript content (Ctrl + A) <br>
+                  4. Copy and paste it into the text box above <br>
+                  5. Press Enter or click "Process & Hide Passed Courses"
                 </p>
               </div>
             </div>
               
             <div class="course-selection-header">
-              <label>Pilih Mata Kuliah</label>
+              <label>Choose Courses</label>
               <div class="course-meta">
-                <span id="selected-count">0 dipilih</span>
+                <span id="selected-count">0 selected</span>
                 <span id="selected-sks">0 SKS</span>
               </div>
             </div>
@@ -233,15 +232,15 @@
                 id="course-search"
                 class="course-search"
                 type="text"
-                placeholder="Cari mata kuliah..."
+                placeholder="Search courses..."
                 autocomplete="off"
               />
             </div>
             <div class="course-toolbar">
               <div class="filter-group">
-                <label for="semester-filter">Filter Semester</label>
+                <label for="semester-filter">Semester Filter</label>
                 <select id="semester-filter">
-                  <option value="">Semua semester</option>
+                  <option value="">All semesters</option>
                 </select>
               </div>
               <div class="course-actions">
@@ -249,13 +248,13 @@
                   class="chip-btn small"
                   onclick="selectAllVisibleCourses()"
                 >
-                  Pilih semua yang terlihat
+                  Select all visible
                 </button>
                 <button
                   class="chip-btn small secondary"
                   onclick="clearAllSelectedCourses()"
                 >
-                  Hapus semua pilihan
+                  Clear all selections
                 </button>
               </div>
             </div>
@@ -263,21 +262,21 @@
             <div class="step-navigation">
               <button class="back-btn" onclick="goToStep(1)">
                 <i data-lucide="arrow-left"></i>
-                <span>Kembali</span>
+                <span>Back</span>
               </button>
               <button class="generate-btn" onclick="generateSchedules()">
                 <i data-lucide="sparkles"></i>
-                <span>Buat Jadwal Pintar</span>
+                <span>Generate Smart Schedule</span>
               </button>
             </div>
           </div>
 
           <!-- Step 3: Results -->
           <div class="builder-step" id="step-3">
-            <h2>Jadwal yang Dihasilkan</h2>
+            <h2>Generated Schedules</h2>
             <div class="results-header">
               <div class="results-info">
-                <span id="results-count">0 kombinasi</span>
+                <span id="results-count">0 combinations</span>
                 <span id="results-sks">0 SKS</span>
               </div>
               <div id="results-badges" class="results-badges"></div>
@@ -291,7 +290,7 @@
                 </button>
               </div>
               <button class="chip-btn small" onclick="copyCurrentSchedule()">
-                Salin kombinasi ini
+                Copy this combination
               </button>
             </div>
             <div id="generated-schedule" class="schedule-grid"></div>
@@ -299,7 +298,7 @@
             <button class="back-btn" onclick="goToStep(2)">
               <i data-lucide="arrow-left"></i>
 
-              <span>Kembali ke Pilih Mata Kuliah</span>
+              <span>Back to Choose Courses</span>
             </button>
           </div>
         </div>
