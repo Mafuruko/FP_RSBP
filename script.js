@@ -151,6 +151,9 @@ function setupEventListeners() {
       e.target.classList.add("active");
       colorBy = e.target.dataset.color;
       renderScheduleCards();
+      if (generatedSchedules.length > 0) {
+        renderGeneratedSchedule();
+      }
     });
   });
 
