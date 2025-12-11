@@ -39,7 +39,7 @@ document.addEventListener("DOMContentLoaded", () => {
 // Load CSV Data
 async function loadScheduleData() {
   try {
-    const response = await fetch("schedule-data.csv");
+    const response = await fetch("/static/sorted-schedule.csv");
     const csv = await response.text();
     // Filter out kelas RPL dan RKA agar tidak muncul di view maupun builder
     scheduleData = parseCSV(csv).filter((entry) => {
