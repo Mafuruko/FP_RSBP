@@ -5,6 +5,7 @@ let selectedDay = "Senin";
 let filterType = "day";
 let filterValue = "";
 let colorBy = "time";
+let prereqToggle = true;
 
 // Builder State
 let maxSKS = 24;
@@ -14,12 +15,12 @@ let avoidLecturers = [];
 let selectedCourses = [];
 let excludedCourses = [];
 let transcriptExcludedCourses = [];
+let passedCoursesWithGrade = [];
 let allCourses = [];
 let courseSKSMap = {};
 let generatedSchedules = [];
 let currentScheduleIndex = 0;
 let daySearchTerm = "";
-let passedCoursesWithGrade = [];
 
 function refreshIcons() {
   if (window.lucide && typeof window.lucide.createIcons === "function") {
@@ -1014,7 +1015,8 @@ function isPrerequisiteMet(prereqCourseName, passedCourses) {
 
 function checkPrerequisites(courseName, passedCourses) {
   const prereqs = PREREQUISITE_MAP[courseName];
-  if (!prereqs) {
+
+  if (!prereqs || !prereqToggle) {
     // No prerequisites defined
     return { isMet: true, missing: [] };
   }
@@ -1074,6 +1076,12 @@ function setupTranscriptListeners() {
   }
 }
 
+function togglePrerequisite(){
+  prereqToggle = !prereqToggle;
+  
+  renderCourseSelector();
+}
+
 function revertTranscript(){  
   // 1. Check for any excluded courses
   if(transcriptExcludedCourses.length === 0){
@@ -1083,12 +1091,13 @@ function revertTranscript(){
 
   let hiddenCount = transcriptExcludedCourses.length;
 
-  // 2. Set excluded course to 0
+  // 2. Set transcript courses to 0
   excludedCourses = excludedCourses.filter(item => !transcriptExcludedCourses.includes(item))
   transcriptExcludedCourses.length = 0;
+  passedCoursesWithGrade.length = 0;
 
   // 3. Refresh UI
-  renderCourseSelector(); // This filters out the excludedCourses
+  renderCourseSelector();
   updateSelectedCount();
 
   showToast(`Done! Restored ${hiddenCount} passed courses.`, "success");
