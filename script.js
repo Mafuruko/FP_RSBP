@@ -50,9 +50,9 @@ async function loadScheduleData() {
     updateUI();
     populateLecturerSelect();
     renderCourseSelector();
-    showToast("Data berhasil dimuat!", "success");
+    showToast("Data loaded successfully!", "success");
   } catch (error) {
-    showToast("Gagal memuat data jadwal", "error");
+    showToast("Failed to load schedule data", "error");
   }
 }
 
@@ -269,7 +269,7 @@ function updateStatistics() {
 // Update Filter Options
 function updateFilterOptions() {
   const select = document.getElementById("filter-select");
-  select.innerHTML = '<option value="">Pilih Filter</option>';
+  select.innerHTML = '<option value="">Choose a filter</option>';
 
   let options = [];
   switch (filterType) {
@@ -343,7 +343,7 @@ function renderScheduleCards() {
 
   if (dayEntries.length === 0) {
     container.innerHTML =
-      '<div class="empty-state"><p>Tidak ada jadwal untuk hari ini</p></div>';
+      '<div class="empty-state"><p>No schedule for this day</p></div>';
     return;
   }
 
@@ -421,7 +421,7 @@ function populateSemesterFilter() {
   const semesters = [...new Set(scheduleData.map((e) => e.semester))].sort(
     (a, b) => a - b
   );
-  select.innerHTML = '<option value="">Semua semester</option>';
+  select.innerHTML = '<option value="">All semesters</option>';
   semesters.forEach((sem) => {
     const option = document.createElement("option");
     option.value = sem;
@@ -460,7 +460,7 @@ function renderCourseSelector(searchTerm = "") {
     container.innerHTML = `
       <div class="course-empty">
         <i data-lucide="search-x"></i>
-        <p>Mata Kuliah tidak ditemukan (atau sudah lulus)</p>
+        <p>No courses found (or already passed)</p>
       </div>
     `;
     refreshIcons();
@@ -546,7 +546,7 @@ function getSelectedTotalSKS() {
 function updateSelectedCount() {
   document.getElementById(
     "selected-count"
-  ).textContent = `${selectedCourses.length} dipilih`;
+  ).textContent = `${selectedCourses.length} selected`;
   const totalSKS = getSelectedTotalSKS();
   const selectedSKSEl = document.getElementById("selected-sks");
   if (selectedSKSEl) {
@@ -608,7 +608,7 @@ function goToStep(step) {
 // Generate Schedules
 function generateSchedules() {
   if (selectedCourses.length === 0) {
-    showToast("Pilih minimal satu mata kuliah!", "error");
+    showToast("Pick at least one course!", "error");
     return;
   }
 
@@ -623,7 +623,7 @@ function generateSchedules() {
   generatedSchedules = generateScheduleCombinations(preferences);
 
   if (generatedSchedules.length === 0) {
-    showToast("Tidak ada kombinasi jadwal yang valid!", "error");
+    showToast("No valid schedule combinations found!", "error");
     return;
   }
 
@@ -631,7 +631,7 @@ function generateSchedules() {
   goToStep(3);
   renderGeneratedSchedule();
   showToast(
-    `Berhasil membuat ${generatedSchedules.length} kombinasi jadwal!`,
+    `Created ${generatedSchedules.length} schedule combinations!`,
     "success"
   );
 }
@@ -709,7 +709,7 @@ function generateScheduleCombinations(preferences) {
     return { combo, avoidedDayCount, avoidedLecturerCount, timeScore };
   });
 
-  // Pisahkan kombinasi yang bersih (tanpa kendala) dan yang memiliki kendala
+  // Split clean combinations (no penalties) from those with constraints
   const cleanCombos = scored.filter(
     (s) => s.avoidedDayCount === 0 && s.avoidedLecturerCount === 0
   );
@@ -717,10 +717,10 @@ function generateScheduleCombinations(preferences) {
     (s) => s.avoidedDayCount > 0 || s.avoidedLecturerCount > 0
   );
 
-  // Urutkan kombinasi bersih berdasarkan skor waktu (terbaik dulu)
+  // Sort clean combos by time score (best first)
   cleanCombos.sort((a, b) => b.timeScore - a.timeScore);
 
-  // Urutkan kombinasi dengan kendala berdasarkan penalti, lalu skor waktu
+  // Sort constrained combos by penalty first, then time score
   constrainedCombos.sort((a, b) => {
     const penaltyA =
       a.avoidedDayCount * 10000 + a.avoidedLecturerCount * 100;
@@ -736,7 +736,7 @@ function generateScheduleCombinations(preferences) {
   // Gabungkan keduanya, dengan yang bersih diutamakan
   const finalSortedCombos = [...cleanCombos, ...constrainedCombos];
 
-  // Ambil maksimal 20 kombinasi
+  // Keep top 20 combinations
   return finalSortedCombos.slice(0, 20).map((item) => item.combo);
 }
 
@@ -786,7 +786,7 @@ function renderGeneratedSchedule() {
 
   document.getElementById(
     "results-count"
-  ).textContent = `${generatedSchedules.length} kombinasi`;
+  ).textContent = `${generatedSchedules.length} combinations`;
   document.getElementById("results-sks").textContent = `${totalSKS} SKS`;
   document.getElementById("schedule-counter").textContent = `${
     currentScheduleIndex + 1
@@ -802,8 +802,8 @@ function renderGeneratedSchedule() {
   const badgesContainer = document.getElementById("results-badges");
   if (badgesContainer) {
     badgesContainer.innerHTML = `
-      <span class="results-badge">Hari dihindari: ${avoidDayHits}</span>
-      <span class="results-badge">Dosen dihindari: ${avoidLecturerHits}</span>
+      <span class="results-badge">Avoided days hit: ${avoidDayHits}</span>
+      <span class="results-badge">Avoided lecturers hit: ${avoidLecturerHits}</span>
     `;
   }
 
@@ -841,8 +841,8 @@ function copyCurrentSchedule() {
   const text = lines.join("\n");
   navigator.clipboard
     .writeText(text)
-    .then(() => showToast("Kombinasi disalin ke clipboard", "success"))
-    .catch(() => showToast("Gagal menyalin jadwal", "error"));
+    .then(() => showToast("Combination copied to clipboard", "success"))
+    .catch(() => showToast("Failed to copy schedule", "error"));
 }
 
 // Group Schedule by Day
@@ -873,7 +873,7 @@ function setupTranscriptListeners() {
     toggleBtn.addEventListener("click", () => {
       const isHidden = inputArea.style.display === "none";
       inputArea.style.display = isHidden ? "block" : "none";
-      toggleBtn.textContent = isHidden ? "Tutup" : "Buka/Tutup";
+      toggleBtn.textContent = isHidden ? "Close" : "Open";
     });
   }
 
@@ -907,7 +907,7 @@ function setupTranscriptListeners() {
 function revertTranscript(){  
   // 1. Check for any excluded courses
   if(transcriptExcludedCourses.length === 0){
-    showToast("Tidak ada excluded course dari transkrip!", "error");
+    showToast("No excluded courses from the transcript!", "error");
     return;
   }
 
@@ -921,13 +921,13 @@ function revertTranscript(){
   renderCourseSelector(); // This filters out the excludedCourses
   updateSelectedCount();
 
-  showToast(`Selesai! ${hiddenCount} MK lulus dipulihkan.`, "success");
+  showToast(`Done! Restored ${hiddenCount} passed courses.`, "success");
 }
 
 function processTranscript() {
   const rawText = document.getElementById("transcript-text").value;
   if (!rawText.trim()) {
-    showToast("Teks transkrip kosong!", "error");
+    showToast("Transcript text is empty!", "error");
     return;
   }
 
@@ -935,7 +935,7 @@ function processTranscript() {
   const detectedCourses = parseTranscriptText(rawText); // Returns [{name: "...", grade: "..."}, ...]
   
   if (detectedCourses.length === 0) {
-    showToast("Tidak ada mata kuliah yang terdeteksi.", "error");
+    showToast("No courses detected in the transcript.", "error");
     return;
   }
 
@@ -982,7 +982,7 @@ function processTranscript() {
   renderCourseSelector(); // This filters out the excludedCourses
   updateSelectedCount();
   
-  showToast(`Selesai! ${hiddenCount} MK lulus disembunyikan. ${keptCount} MK nilai rendah tetap muncul.`, "success");
+  showToast(`Done! Hid ${hiddenCount} passed courses. ${keptCount} lower-grade courses stay visible.`, "success");
 }
 
 function parseTranscriptText(text) {
