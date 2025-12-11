@@ -716,9 +716,9 @@ function generateScheduleCombinations(preferences) {
   scored.sort((a, b) => {
     // Hitung total penalty (makin kecil makin bagus)
     const penaltyA =
-      a.avoidedDayCount * 1000 + a.avoidedLecturerCount * 100;
+      a.avoidedDayCount * 10000 + a.avoidedLecturerCount * 100;
     const penaltyB =
-      b.avoidedDayCount * 1000 + b.avoidedLecturerCount * 100;
+      b.avoidedDayCount * 10000 + b.avoidedLecturerCount * 100;
 
     if (penaltyA !== penaltyB) {
       return penaltyA - penaltyB;
